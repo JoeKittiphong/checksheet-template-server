@@ -26,7 +26,8 @@ function AppContent() {
 
   const handleNavigateToDetail = (data) => {
     // Redirect ไปหน้า form พร้อม id
-    window.location.href = `${import.meta.env.VITE_DATABASE_URL}/form?id=${data.id}`;
+    const dbUrl = import.meta.env.VITE_DATABASE_URL || window.location.origin;
+    window.location.href = `${dbUrl}/form?id=${data.id}`;
   };
 
   const handleBackToSearch = () => {

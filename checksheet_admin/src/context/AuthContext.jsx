@@ -11,7 +11,8 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuthStatus = async () => {
         try {
-            const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/me`, { withCredentials: true });
+            const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+            const response = await axios.get(`${apiBase}/auth/me`, { withCredentials: true });
             if (response.data.success) {
                 setUser(response.data.user);
             }
@@ -28,7 +29,8 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (code, password) => {
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/login`,
+            const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+            const response = await axios.post(`${apiBase}/auth/login`,
                 { code, password },
                 { withCredentials: true }
             );
@@ -46,7 +48,8 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         try {
-            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/logout`, {}, { withCredentials: true });
+            const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+            await axios.post(`${apiBase}/auth/logout`, {}, { withCredentials: true });
             setUser(null);
         } catch (error) {
             console.error('Logout error:', error);

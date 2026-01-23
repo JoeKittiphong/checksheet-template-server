@@ -9,8 +9,8 @@ const TrashIcon = () => (
 );
 
 const FolderCard = ({ item, onClick, onDeleteClick, isPreview = false, isAdmin = false }) => {
-    const folderColor = getDepartmentColor(item.department);
-    const tabColor = getGroupColor(item.as_group);
+    const folderColor = getDepartmentColor(item.department || item.departmentName);
+    const tabColor = getGroupColor(item.as_group || item.asGroup);
 
     const handleTrashClick = (e) => {
         e.stopPropagation(); // Prevent triggering onClick of the card
@@ -27,7 +27,7 @@ const FolderCard = ({ item, onClick, onDeleteClick, isPreview = false, isAdmin =
             {/* Folder Tab - Shows AS Group with Group-based color */}
             <div className={`absolute top-0 left-0 px-2.5 h-6 rounded-t-lg z-0 transition-colors duration-300 ${tabColor} flex items-center`}>
                 <span className="text-[10px] font-bold text-white uppercase tracking-wide whitespace-nowrap">
-                    {item.as_group || 'GRP'}
+                    {item.as_group || item.asGroup || 'GRP'}
                 </span>
             </div>
 
@@ -54,7 +54,7 @@ const FolderCard = ({ item, onClick, onDeleteClick, isPreview = false, isAdmin =
                             {item.model || 'MODEL'}
                         </h3>
                         <p className="text-2xl font-black text-white mt-1 tracking-tight group-hover:scale-110 transition-transform">
-                            {item.machine_no || 'NO.00'}
+                            {item.machine_no || item.machineNo || 'NO.00'}
                         </p>
                     </div>
                 </div>
@@ -63,7 +63,7 @@ const FolderCard = ({ item, onClick, onDeleteClick, isPreview = false, isAdmin =
                 <div className="mt-1 pt-1 border-t border-white/20 flex justify-between items-center text-[10px] text-white/80 font-medium">
                     <span className="tracking-wide">{item.department || 'DEPT'}</span>
                     <span className={`truncate max-w-[70%] px-1.5 py-0.5 rounded text-[9px] ${item.has_data ? 'bg-white/20 text-white' : 'text-white/60'}`}>
-                        {item.checksheet_name || 'FORM'}
+                        {item.checksheet_name || item.checksheetName || 'FORM'}
                     </span>
                 </div>
             </div>

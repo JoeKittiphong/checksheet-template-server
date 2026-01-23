@@ -16,6 +16,7 @@ const UserManagement = ({ onBack }) => {
     });
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [filterMode, setFilterMode] = useState('all'); // 'all' or 'online'
 
     useEffect(() => {
         fetchUsers();
@@ -34,11 +35,16 @@ const UserManagement = ({ onBack }) => {
         }
     };
 
-    // Filter users based on search term (Search by Code or Username)
-    const filteredUsers = users.filter(u =>
-        u.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.username.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Filter users based on search term and online status
+    const filteredUsers = users.filter(u => {
+        const matchesSearch = u.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            u.username.toLowerCase().includes(searchTerm.toLowerCase());
+
+        if (filterMode === 'online') {
+            return matchesSearch && u.last_action === 'LOGIN_SUCCESS';
+        }
+        return matchesSearch;
+    });
 
     const handleOpenAdd = () => {
         setEditingUser(null);
@@ -111,7 +117,7 @@ const UserManagement = ({ onBack }) => {
                         <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
                     </div>
 
-                    <div className="flex flex-1 max-w-md gap-2">
+                    <div className="flex flex-1 max-w-2xl gap-2">
                         <div className="relative flex-1">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,6 +132,24 @@ const UserManagement = ({ onBack }) => {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
+
+                        {/* Status Filter Toggle */}
+                        <div className="flex bg-gray-200 p-1 rounded-lg">
+                            <button
+                                onClick={() => setFilterMode('all')}
+                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${filterMode === 'all' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
+                            >
+                                All
+                            </button>
+                            <button
+                                onClick={() => setFilterMode('online')}
+                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${filterMode === 'online' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
+                            >
+                                <span className={`w-1.5 h-1.5 rounded-full bg-green-500 ${filterMode === 'online' ? 'animate-pulse' : ''}`}></span>
+                                Online
+                            </button>
+                        </div>
+
                         <button
                             onClick={handleOpenAdd}
                             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 whitespace-nowrap"
@@ -142,10 +166,11 @@ const UserManagement = ({ onBack }) => {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-gray-50 border-b border-gray-100">
+                                <th className="px-6 py-4 font-semibold text-gray-600 text-sm">Status</th>
                                 <th className="px-6 py-4 font-semibold text-gray-600 text-sm">Code (Employee ID)</th>
                                 <th className="px-6 py-4 font-semibold text-gray-600 text-sm">Username</th>
                                 <th className="px-6 py-4 font-semibold text-gray-600 text-sm">Role</th>
-                                <th className="px-6 py-4 font-semibold text-gray-600 text-sm">Created At</th>
+                                <th className="px-6 py-4 font-semibold text-gray-600 text-sm">Last Activity</th>
                                 <th className="px-6 py-4 font-semibold text-gray-600 text-sm text-right">Actions</th>
                             </tr>
                         </thead>
@@ -153,6 +178,14 @@ const UserManagement = ({ onBack }) => {
                             {filteredUsers.length > 0 ? (
                                 filteredUsers.map((u) => (
                                     <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4 text-sm font-medium">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`w-2 h-2 rounded-full ${u.last_action === 'LOGIN_SUCCESS' ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></span>
+                                                <span className={u.last_action === 'LOGIN_SUCCESS' ? 'text-green-700 font-semibold' : 'text-gray-500'}>
+                                                    {u.last_action === 'LOGIN_SUCCESS' ? 'Online' : 'Offline'}
+                                                </span>
+                                            </div>
+                                        </td>
                                         <td className="px-6 py-4 text-sm font-medium text-gray-800">{u.code}</td>
                                         <td className="px-6 py-4 text-sm text-gray-600">{u.username}</td>
                                         <td className="px-6 py-4 text-sm capitalize">
@@ -162,7 +195,16 @@ const UserManagement = ({ onBack }) => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
-                                            {new Date(u.create_at).toLocaleDateString()}
+                                            {u.last_action_at ? (
+                                                <div className="flex flex-col">
+                                                    <span>{new Date(u.last_action_at).toLocaleString()}</span>
+                                                    <span className="text-[10px] opacity-70">
+                                                        {u.last_action === 'LOGIN_SUCCESS' ? 'Logged in' : 'Logged out'}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="italic text-gray-300">No records</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-2">

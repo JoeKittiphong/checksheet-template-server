@@ -5,10 +5,32 @@ const pool = require('../config/db');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { logActivity } = require('../utils/logger');
 
-// List all users
+// List all users with their online status based on logs
 router.get('/', authenticateToken, requireAdmin, async (req, res) => {
     try {
-        const result = await pool.query('SELECT id, code, username, role, create_at FROM users ORDER BY create_at DESC');
+        const query = `
+            WITH LastActivity AS (
+                SELECT DISTINCT ON (user_code) 
+                    user_code, 
+                    action_type as last_action, 
+                    created_at as last_action_at
+                FROM activity_logs
+                WHERE action_type IN ('LOGIN_SUCCESS', 'LOGOUT')
+                ORDER BY user_code, created_at DESC
+            )
+            SELECT 
+                u.id, 
+                u.code, 
+                u.username, 
+                u.role, 
+                u.create_at,
+                la.last_action,
+                la.last_action_at
+            FROM users u
+            LEFT JOIN LastActivity la ON u.code = la.user_code
+            ORDER BY u.create_at DESC
+        `;
+        const result = await pool.query(query);
         res.json({ success: true, data: result.rows });
     } catch (err) {
         console.error('Error fetching users:', err);

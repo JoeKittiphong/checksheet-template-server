@@ -31,7 +31,7 @@ router.post('/login', async (req, res) => {
 
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: false, // Set to false to allow login over HTTP via Nginx
             maxAge: 24 * 60 * 60 * 1000 // 24 hours
         });
 

@@ -5,7 +5,11 @@ import AddModal from './AddModal';
 import DeleteModal from './DeleteModal';
 import { useAuth } from '../context/AuthContext';
 
-const FORM_BASE_URL = 'http://localhost:3000/form';
+// Determine API Base URL
+// In development, we might be on port 5173 but server is 3000.
+// In production, we are on the same origin.
+const API_BASE = import.meta.env.DEV ? 'http://localhost:3000' : window.location.origin;
+const FORM_BASE_URL = `${API_BASE}/form`;
 
 // --- Main Component ---
 function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs }) {
@@ -14,6 +18,9 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs }) 
     const [machineNo, setMachineNo] = useState('');
     const [asGroup, setAsGroup] = useState('');
     const [checksheetName, setChecksheetName] = useState('');
+
+    // Track if a search has been initiated so we can auto-refresh
+    const [hasSearched, setHasSearched] = useState(false);
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -36,11 +43,12 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs }) 
     // Fetch Options
     const fetchOptions = async (dept = '', mod = '') => {
         try {
+            const apiBase = import.meta.env.VITE_DATABASE_URL || '';
             const params = new URLSearchParams();
             if (dept) params.append('department', dept);
             if (mod) params.append('model', mod);
 
-            const response = await axios.get(`${import.meta.env.VITE_DATABASE_URL}/options?${params.toString()}`, { withCredentials: true });
+            const response = await axios.get(`${apiBase}/options?${params.toString()}&_t=${Date.now()}`, { withCredentials: true, headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } });
             setOptions(response.data);
         } catch (error) {
             console.error('Error fetching options:', error);
@@ -52,7 +60,8 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs }) 
         fetchOptions();
         const fetchForms = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_DATABASE_URL}/available-forms`, { withCredentials: true });
+                const apiBase = import.meta.env.VITE_DATABASE_URL || '';
+                const response = await axios.get(`${apiBase}/available-forms?_t=${Date.now()}`, { withCredentials: true, headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } });
                 setAvailableForms(response.data);
             } catch (error) {
                 console.error('Error fetching forms:', error);
@@ -79,6 +88,7 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs }) 
 
     const handleSearch = async () => {
         try {
+            const apiBase = import.meta.env.VITE_DATABASE_URL || '';
             const params = new URLSearchParams();
             if (department) params.append('department', department);
             if (model) params.append('model', model);
@@ -86,13 +96,26 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs }) 
             if (asGroup) params.append('as_group', asGroup);
             if (checksheetName) params.append('checksheet_name', checksheetName);
 
-            const url = `${import.meta.env.VITE_DATABASE_URL}/search?${params.toString()}`;
-            const response = await axios.get(url, { withCredentials: true });
+            const url = `${apiBase}/search?${params.toString()}&_t=${Date.now()}`;
+            const response = await axios.get(url, { withCredentials: true, headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } });
             setSearchData(response.data);
+            setHasSearched(true);
         } catch (error) {
             console.error('Error fetching data:', error);
         }
     };
+
+    // Auto-refresh when window gains focus
+    useEffect(() => {
+        const onFocus = () => {
+            if (hasSearched) {
+                handleSearch();
+            }
+        };
+
+        window.addEventListener('focus', onFocus);
+        return () => window.removeEventListener('focus', onFocus);
+    }, [hasSearched, department, model, machineNo, asGroup, checksheetName]);
 
     // Delete Logic
     const handleDeleteClick = (item) => {
@@ -105,13 +128,15 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs }) 
         setShowDeleteModal(false);
         setItemToDelete(null);
         handleSearch();
-        const optionsResponse = await axios.get(`${import.meta.env.VITE_DATABASE_URL}/options`, { withCredentials: true });
+        const apiBase = import.meta.env.VITE_DATABASE_URL || '';
+        const optionsResponse = await axios.get(`${apiBase}/options`, { withCredentials: true });
         setOptions(optionsResponse.data);
     };
 
     const handleAddSuccess = async () => {
         setShowAddModal(false);
-        const optionsResponse = await axios.get(`${import.meta.env.VITE_DATABASE_URL}/options`, { withCredentials: true });
+        const apiBase = import.meta.env.VITE_DATABASE_URL || '';
+        const optionsResponse = await axios.get(`${apiBase}/options`, { withCredentials: true });
         setOptions(optionsResponse.data);
         handleSearch();
     };
