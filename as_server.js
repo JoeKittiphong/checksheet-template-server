@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const cookieParser = require('cookie-parser');
+const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -37,14 +38,13 @@ app.use('/', dbRoutes);
 // SERVE STATIC FORMS & ADMIN PANEL
 // ============================================
 const formsDir = path.join(__dirname, 'checksheet_form');
-app.use('/form', express.static(formsDir));
-
-// Shorthand for images/assets (legacy support)
-app.use('/images', express.static(path.join(formsDir, 'dist/images')));
-app.use('/assets', express.static(path.join(formsDir, 'dist/assets')));
 
 // SPA Fallback for Dynamic Forms (/form/edw, etc.)
 app.get(/^\/form\/([^/]+)(?:\/.*)?$/, (req, res, next) => {
+    // Check authentication and redirect to login if not authenticated
+    const token = req.cookies.token;
+    if (!token) return res.redirect('/');
+
     const formName = req.params[0];
     if (req.path.match(/\.\w+$/)) return next();
 
@@ -56,9 +56,16 @@ app.get(/^\/form\/([^/]+)(?:\/.*)?$/, (req, res, next) => {
     }
 });
 
-// Admin Panel
+// Admin Panel (Public)
 const appBuildDir = path.join(__dirname, 'checksheet_admin/dist');
 app.use(express.static(appBuildDir));
+
+// Serve checksheet forms (Secured Assets)
+app.use('/form', authenticateToken, express.static(formsDir));
+
+// Shorthand for images/assets (legacy support - secured)
+app.use('/images', authenticateToken, express.static(path.join(formsDir, 'dist/images')));
+app.use('/assets', authenticateToken, express.static(path.join(formsDir, 'dist/assets')));
 
 // SPA Fallback for Admin Panel
 app.get(/.*/, (req, res) => {

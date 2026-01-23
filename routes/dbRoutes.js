@@ -221,7 +221,7 @@ router.post('/api/save-form', authenticateToken, async (req, res) => {
 });
 
 // Load form data by ID
-router.get('/api/load-form/:id', async (req, res) => {
+router.get('/api/load-form/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     try {
         const result = await pool.query('SELECT * FROM as_checksheet_db WHERE id = $1', [id]);
@@ -234,7 +234,7 @@ router.get('/api/load-form/:id', async (req, res) => {
 });
 
 // Load form data by machine info
-router.get('/api/load-form-by-machine', async (req, res) => {
+router.get('/api/load-form-by-machine', authenticateToken, async (req, res) => {
     const { department, model, machine_no, as_group, checksheet_name } = req.query;
     try {
         const result = await pool.query(
