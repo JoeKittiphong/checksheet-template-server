@@ -1,4 +1,6 @@
 {
+    "form_name" : "FAMB0003",
+    "version": "2",
     "department": "EDM",
     "model": "AL60G Plus",
     "as_group": "BODY",

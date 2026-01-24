@@ -5,6 +5,7 @@ import DetailPage from './components/DetailPage';
 import Login from './components/Login';
 import UserManagement from './components/UserManagement';
 import LogViewer from './components/LogViewer';
+import TemplateList from './pages/TemplateList';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -25,7 +26,7 @@ function AppContent() {
   }
 
   const handleNavigateToDetail = (data) => {
-    // Redirect ไปหน้า form พร้อม id
+    // Redirect to form/id
     const dbUrl = import.meta.env.VITE_DATABASE_URL || window.location.origin;
     window.location.href = `${dbUrl}/form?id=${data.id}`;
   };
@@ -43,12 +44,18 @@ function AppContent() {
     setCurrentPage('logs');
   };
 
+  const handleToTemplates = () => {
+    setCurrentPage('templates');
+  };
+
   const renderContent = () => {
     switch (currentPage) {
       case 'users':
         return <UserManagement onBack={handleBackToSearch} />;
       case 'logs':
         return <LogViewer onBack={handleBackToSearch} />;
+      case 'templates':
+        return <TemplateList onBack={handleBackToSearch} />;
       case 'detail':
         return <DetailPage data={selectedData} onBack={handleBackToSearch} />;
       default:
@@ -59,6 +66,7 @@ function AppContent() {
             setSearchData={setSearchData}
             onToUsers={handleToUserManagement}
             onToLogs={handleToLogs}
+            onToTemplates={handleToTemplates}
           />
         );
     }
@@ -80,4 +88,3 @@ function App() {
 }
 
 export default App;
-

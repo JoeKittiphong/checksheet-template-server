@@ -1,4 +1,6 @@
 {
+    "form_name" : "FAMB0004",
+    "version": "3",
     "department": "EDM",
     "model": "AL80G Plus",
     "as_group": "BODY",

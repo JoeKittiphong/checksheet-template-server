@@ -12,7 +12,7 @@ const API_BASE = import.meta.env.DEV ? 'http://localhost:3000' : window.location
 const FORM_BASE_URL = `${API_BASE}/form`;
 
 // --- Main Component ---
-function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs }) {
+function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, onToTemplates }) {
     const [department, setDepartment] = useState('');
     const [model, setModel] = useState('');
     const [machineNo, setMachineNo] = useState('');
@@ -238,6 +238,16 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs }) 
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                 </svg>
                                 Logs
+                            </button>
+                            <button
+                                className="h-9 px-3 bg-slate-50 hover:bg-slate-100 text-slate-600 text-sm font-bold rounded-lg transition-colors flex items-center gap-1"
+                                onClick={onToTemplates}
+                                title="Template List"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
+                                </svg>
+                                Templates
                             </button>
                         </>
                     )}

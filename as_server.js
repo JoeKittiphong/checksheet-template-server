@@ -27,10 +27,12 @@ const formRoutes = require('./routes/formRoutes');
 const dbRoutes = require('./routes/dbRoutes');
 const userRoutes = require('./routes/userRoutes');
 const logRoutes = require('./routes/logRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/logs', logRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/', formRoutes);
 app.use('/', dbRoutes);
 
