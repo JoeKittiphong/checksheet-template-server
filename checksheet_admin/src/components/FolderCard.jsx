@@ -35,11 +35,11 @@ const FolderCard = ({ item, onClick, onDeleteClick, isPreview = false, isAdmin =
             <div className={`relative mt-4 w-full aspect-[3/2] rounded-xl rounded-tl-none p-3 flex flex-col justify-between shadow-lg z-10 transition-all duration-300 ${folderColor} group-hover:ring-4 group-hover:ring-white/40 text-white`}>
 
                 {/* Header with Trash Icon */}
-                <div className="flex justify-end h-4">
+                <div className="flex justify-end h-6">
                     {!isPreview && isAdmin && (
                         <button
                             onClick={handleTrashClick}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 -m-1 rounded-full hover:bg-red-500/30 text-white/60 hover:text-red-400"
+                            className="p-1.5 -m-1 rounded-full bg-white/10 hover:bg-red-500/80 text-white/90 hover:text-white transition-all shadow-sm"
                             title="Delete this folder"
                         >
                             <TrashIcon />

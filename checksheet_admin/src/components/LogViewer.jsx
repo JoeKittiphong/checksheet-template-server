@@ -132,11 +132,11 @@ const LogViewer = ({ onBack }) => {
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="bg-gray-50 border-b border-gray-100">
-                                    <th className="px-6 py-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Timestamp</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">User</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Action</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Details</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-600 text-xs uppercase tracking-wider text-right">IP</th>
+                                    <th className="px-6 py-4 font-semibold text-gray-600 text-xs uppercase tracking-wider whitespace-nowrap">Timestamp</th>
+                                    <th className="px-6 py-4 font-semibold text-gray-600 text-xs uppercase tracking-wider whitespace-nowrap">User</th>
+                                    <th className="px-6 py-4 font-semibold text-gray-600 text-xs uppercase tracking-wider whitespace-nowrap">Action</th>
+                                    <th className="px-6 py-4 font-semibold text-gray-600 text-xs uppercase tracking-wider whitespace-nowrap">Details</th>
+                                    <th className="px-6 py-4 font-semibold text-gray-600 text-xs uppercase tracking-wider text-right whitespace-nowrap">IP</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">

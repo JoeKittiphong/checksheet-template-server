@@ -26,6 +26,17 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
 
+    // Mobile Tab State ('search' or 'settings' or null)
+    // Default to 'search' or the last saved state
+    const [activeTab, setActiveTab] = useState(() => {
+        return localStorage.getItem('admin_active_tab') || 'search';
+    });
+
+    // Persist tab state
+    useEffect(() => {
+        localStorage.setItem('admin_active_tab', activeTab);
+    }, [activeTab]);
+
     const [options, setOptions] = useState({
         departments: [],
         models: [],
@@ -167,8 +178,8 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
 
     return (
         <div className="p-4 bg-slate-100 min-h-screen font-sans">
-            {/* Unified Header + Filter Bar */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-3 mb-6">
+            {/* Desktop Header (Unchanged) */}
+            <div className="hidden lg:block bg-white rounded-xl shadow-sm border border-slate-200 p-3 mb-6">
                 <div className="flex flex-wrap items-center gap-2">
                     {/* Title */}
                     <h1 className="text-lg font-bold text-slate-700 flex items-center gap-2 mr-4">
@@ -179,23 +190,23 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
                     <div className="hidden md:block w-px h-8 bg-slate-200 mx-2"></div>
 
                     {/* Filters */}
-                    <select className="border border-slate-200 rounded-lg px-3 h-9 text-sm bg-white text-slate-600 focus:ring-2 focus:ring-slate-400 focus:border-slate-400" value={department} onChange={(e) => handleDepartmentChange(e.target.value)}>
+                    <select className="border border-slate-200 rounded-lg px-3 h-11 text-sm bg-white text-slate-600 focus:ring-2 focus:ring-slate-400 focus:border-slate-400" value={department} onChange={(e) => handleDepartmentChange(e.target.value)}>
                         <option value="">Dept</option>
                         {options.departments.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
                     </select>
-                    <select className="border border-slate-200 rounded-lg px-3 h-9 text-sm bg-white text-slate-600 focus:ring-2 focus:ring-slate-400 focus:border-slate-400" value={model} onChange={(e) => handleModelChange(e.target.value)}>
+                    <select className="border border-slate-200 rounded-lg px-3 h-11 text-sm bg-white text-slate-600 focus:ring-2 focus:ring-slate-400 focus:border-slate-400" value={model} onChange={(e) => handleModelChange(e.target.value)}>
                         <option value="">Model</option>
                         {options.models.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
                     </select>
-                    <select className="border border-slate-200 rounded-lg px-3 h-9 text-sm bg-white text-slate-600 focus:ring-2 focus:ring-slate-400 focus:border-slate-400" value={machineNo} onChange={(e) => setMachineNo(e.target.value)}>
+                    <select className="border border-slate-200 rounded-lg px-3 h-11 text-sm bg-white text-slate-600 focus:ring-2 focus:ring-slate-400 focus:border-slate-400" value={machineNo} onChange={(e) => setMachineNo(e.target.value)}>
                         <option value="">Machine</option>
                         {options.machines.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
                     </select>
-                    <select className="border border-slate-200 rounded-lg px-3 h-9 text-sm bg-white text-slate-600 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 hidden lg:block" value={asGroup} onChange={(e) => setAsGroup(e.target.value)}>
+                    <select className="border border-slate-200 rounded-lg px-3 h-11 text-sm bg-white text-slate-600 focus:ring-2 focus:ring-slate-400 focus:border-slate-400" value={asGroup} onChange={(e) => setAsGroup(e.target.value)}>
                         <option value="">Group</option>
                         {options.asGroups.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
                     </select>
-                    <select className="border border-slate-200 rounded-lg px-3 h-9 text-sm bg-white text-slate-600 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 hidden xl:block" value={checksheetName} onChange={(e) => setChecksheetName(e.target.value)}>
+                    <select className="border border-slate-200 rounded-lg px-3 h-11 text-sm bg-white text-slate-600 focus:ring-2 focus:ring-slate-400 focus:border-slate-400" value={checksheetName} onChange={(e) => setChecksheetName(e.target.value)}>
                         <option value="">Form</option>
                         {availableForms.map((form, i) => <option key={i} value={form.name}>{form.name}</option>)}
                     </select>
@@ -274,9 +285,121 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
                 </div>
             </div>
 
+            {/* Mobile/Tablet Header (Simplified Tabbed Interface) */}
+            <div className="lg:hidden bg-white rounded-xl shadow-sm border border-slate-200 p-3 mb-6 relative z-50">
+                <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-2">
+                        {/* Title */}
+                        <h1 className="text-lg font-bold text-slate-700 flex items-center gap-2 mr-2">
+                            <span className="text-xl">📋</span> Checksheet
+                        </h1>
+
+                        {/* Tab Buttons */}
+                        <div className="flex bg-slate-100 p-1 rounded-lg">
+                            <button
+                                onClick={() => setActiveTab('search')}
+                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-1 ${activeTab === 'search' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                <span>🔍</span> Search
+                            </button>
+                            {isAdmin && (
+                                <button
+                                    onClick={() => setActiveTab('settings')}
+                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-1 ${activeTab === 'settings' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    <span>⚙️</span> Settings
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        {/* User Profile (Next to Logout) */}
+                        <div className="hidden sm:block text-right">
+                            <p className="text-xs font-bold text-slate-700 leading-tight uppercase">{user?.username || 'User'}</p>
+                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">{user?.role || 'Guest'}</p>
+                        </div>
+
+                        {/* Logout */}
+                        <button
+                            onClick={logout}
+                            className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Tab Content Area */}
+
+                {/* 1. Search Tab Content */}
+                {activeTab === 'search' && (
+                    <div className="flex flex-wrap md:flex-nowrap gap-2 items-center animate-in fade-in slide-in-from-top-1 overflow-x-auto pb-1">
+                        <select className="border border-slate-200 rounded-lg px-3 h-10 text-sm bg-white min-w-[100px] flex-1" value={department} onChange={(e) => handleDepartmentChange(e.target.value)}>
+                            <option value="">Dept</option>
+                            {options.departments.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+                        </select>
+                        <select className="border border-slate-200 rounded-lg px-3 h-10 text-sm bg-white min-w-[100px] flex-1" value={model} onChange={(e) => handleModelChange(e.target.value)}>
+                            <option value="">Model</option>
+                            {options.models.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+                        </select>
+                        <select className="border border-slate-200 rounded-lg px-3 h-10 text-sm bg-white min-w-[100px] flex-1" value={machineNo} onChange={(e) => setMachineNo(e.target.value)}>
+                            <option value="">Machine</option>
+                            {options.machines.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+                        </select>
+                        <select className="border border-slate-200 rounded-lg px-3 h-10 text-sm bg-white min-w-[100px] flex-1" value={asGroup} onChange={(e) => setAsGroup(e.target.value)}>
+                            <option value="">Group</option>
+                            {options.asGroups.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+                        </select>
+                        <select className="border border-slate-200 rounded-lg px-3 h-10 text-sm bg-white min-w-[100px] flex-1" value={checksheetName} onChange={(e) => setChecksheetName(e.target.value)}>
+                            <option value="">Form</option>
+                            {availableForms.map((form, i) => <option key={i} value={form.name}>{form.name}</option>)}
+                        </select>
+                        <button
+                            className="h-10 px-4 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-lg whitespace-nowrap"
+                            onClick={handleSearch}
+                        >
+                            Search
+                        </button>
+                    </div>
+                )}
+
+                {/* 2. Settings Tab Content (Admin Only) */}
+                {activeTab === 'settings' && isAdmin && (
+                    <div className="flex flex-wrap gap-2 items-center animate-in fade-in slide-in-from-top-1">
+                        <button
+                            onClick={() => setShowAddModal(true)}
+                            className="px-3 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg text-sm font-bold flex items-center gap-2"
+                        >
+                            <span>+</span> New Form
+                        </button>
+                        <button
+                            onClick={onToTemplates}
+                            className="px-3 py-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium flex items-center gap-2"
+                        >
+                            <span>📋</span> Templates
+                        </button>
+                        <button
+                            onClick={onToUsers}
+                            className="px-3 py-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium flex items-center gap-2"
+                        >
+                            <span>👥</span> Users
+                        </button>
+                        <button
+                            onClick={onToLogs}
+                            className="px-3 py-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium flex items-center gap-2"
+                        >
+                            <span>📜</span> Logs
+                        </button>
+                    </div>
+                )}
+            </div>
+
             {/* Content Area */}
             {searchData.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                     {searchData.map((item, index) => (
                         <FolderCard
                             key={index}

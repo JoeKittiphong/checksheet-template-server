@@ -162,8 +162,8 @@ const UserManagement = ({ onBack }) => {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-                    <table className="w-full text-left">
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden overflow-x-auto border border-gray-100">
+                    <table className="min-w-full text-left">
                         <thead>
                             <tr className="bg-gray-50 border-b border-gray-100">
                                 <th className="px-6 py-4 font-semibold text-gray-600 text-sm">Status</th>
@@ -210,14 +210,14 @@ const UserManagement = ({ onBack }) => {
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => handleOpenEdit(u)}
-                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    className="px-3 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors font-medium text-sm"
                                                 >
                                                     Edit
                                                 </button>
                                                 {currentUser.id !== u.id && (
                                                     <button
                                                         onClick={() => handleDelete(u.id)}
-                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                        className="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors font-medium text-sm"
                                                     >
                                                         Delete
                                                     </button>
