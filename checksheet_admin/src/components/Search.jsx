@@ -170,7 +170,7 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
                 });
                 url = `${FORM_BASE_URL}${formConfig.path}/?${params.toString()}`;
             }
-            window.open(url, '_blank');
+            window.location.href = url;
         } else {
             alert('ไม่พบ Form สำหรับ: ' + item.checksheet_name);
         }
@@ -183,7 +183,8 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
                 <div className="flex flex-wrap items-center gap-2">
                     {/* Title */}
                     <h1 className="text-lg font-bold text-slate-700 flex items-center gap-2 mr-4">
-                        <span className="text-xl">📋</span> Checksheet Admin
+                        <img src="/logo-app.svg" alt="App Logo" className="h-12 w-auto" />
+                        <span>E-CHECKSHEET</span>
                     </h1>
 
                     {/* Divider */}
@@ -290,8 +291,9 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
                 <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-2">
                         {/* Title */}
-                        <h1 className="text-lg font-bold text-slate-700 flex items-center gap-2 mr-2">
-                            <span className="text-xl">📋</span> Checksheet
+                        <h1 className="text-lg font-bold text-slate-700 flex items-end gap-2 mr-2">
+                            <img src="/logo-app.svg" alt="App Logo" className="h-8 w-auto" />
+                            <span>E-CHECKSHEET</span>
                         </h1>
 
                         {/* Tab Buttons */}
@@ -399,7 +401,7 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
 
             {/* Content Area */}
             {searchData.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-10 gap-4">
                     {searchData.map((item, index) => (
                         <FolderCard
                             key={index}
