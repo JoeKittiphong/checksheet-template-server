@@ -23,6 +23,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
                 u.code, 
                 u.username, 
                 u.role, 
+                u.department,
                 u.create_at,
                 la.last_action,
                 la.last_action_at
@@ -40,7 +41,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 
 // Create new user
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
-    const { code, username, password, role } = req.body;
+    const { code, username, password, role, department } = req.body;
     if (!code || !username || !password || !role) {
         return res.status(400).json({ success: false, error: 'Missing required fields' });
     }
@@ -56,8 +57,8 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         const hash = await bcrypt.hash(password, salt);
 
         const result = await pool.query(
-            'INSERT INTO users (code, username, password_hash, role, create_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id, code, username, role',
-            [code, username, hash, role]
+            'INSERT INTO users (code, username, password_hash, role, department, create_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id, code, username, role, department',
+            [code, username, hash, role, department || null]
         );
 
         await logActivity({
@@ -65,7 +66,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
             username: req.user.username,
             action_type: 'CREATE_USER',
             target_id: result.rows[0].id.toString(),
-            details: { code, username, role },
+            details: { code, username, role, department },
             req
         });
 
@@ -79,19 +80,19 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 // Update user
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     const { id } = req.params;
-    const { username, password, role, code } = req.body;
+    const { username, password, role, code, department } = req.body;
 
     try {
-        let query = 'UPDATE users SET username = $1, role = $2, code = $3';
-        let params = [username, role, code, id];
+        let query = 'UPDATE users SET username = $1, role = $2, code = $3, department = $4';
+        let params = [username, role, code, department || null, id];
 
         if (password) {
             const salt = await bcrypt.genSalt(10);
             const hash = await bcrypt.hash(password, salt);
-            query += ', password_hash = $4 WHERE id = $5';
-            params = [username, role, code, hash, id];
+            query += ', password_hash = $5 WHERE id = $6';
+            params = [username, role, code, department || null, hash, id];
         } else {
-            query += ' WHERE id = $4';
+            query += ' WHERE id = $5';
         }
 
         await pool.query(query, params);
@@ -101,7 +102,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
             username: req.user.username,
             action_type: 'UPDATE_USER',
             target_id: id,
-            details: { code, username, role, password_updated: !!password },
+            details: { code, username, role, department, password_updated: !!password },
             req
         });
 

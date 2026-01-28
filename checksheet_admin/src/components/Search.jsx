@@ -66,9 +66,17 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
         }
     };
 
-    // Initial Fetch
+    // Initial Fetch (and setup for user department)
     useEffect(() => {
-        fetchOptions();
+        const currentUserIsAdmin = ['admin', 'manager', 'supervisor', 'engineer'].includes(user?.role);
+
+        if (!currentUserIsAdmin && user?.department) {
+            setDepartment(user.department);
+            fetchOptions(user.department, '');
+        } else {
+            fetchOptions();
+        }
+
         const fetchForms = async () => {
             try {
                 const apiBase = import.meta.env.VITE_DATABASE_URL || '';
@@ -79,7 +87,7 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
             }
         };
         fetchForms();
-    }, []);
+    }, [user]);
 
     // Handlers
     const handleDepartmentChange = (value) => {
@@ -191,8 +199,16 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
                     <div className="hidden md:block w-px h-8 bg-slate-200 mx-2"></div>
 
                     {/* Filters */}
-                    <select className="border border-slate-200 rounded-lg px-3 h-11 text-sm bg-white text-slate-600 focus:ring-2 focus:ring-slate-400 focus:border-slate-400" value={department} onChange={(e) => handleDepartmentChange(e.target.value)}>
+                    <select
+                        className="border border-slate-200 rounded-lg px-3 h-11 text-sm bg-white text-slate-600 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                        value={department}
+                        onChange={(e) => handleDepartmentChange(e.target.value)}
+                        disabled={!isAdmin}
+                    >
                         <option value="">Dept</option>
+                        {department && !options.departments.includes(department) && (
+                            <option value={department}>{department}</option>
+                        )}
                         {options.departments.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
                     </select>
                     <select className="border border-slate-200 rounded-lg px-3 h-11 text-sm bg-white text-slate-600 focus:ring-2 focus:ring-slate-400 focus:border-slate-400" value={model} onChange={(e) => handleModelChange(e.target.value)}>
@@ -339,8 +355,16 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
                 {/* 1. Search Tab Content */}
                 {activeTab === 'search' && (
                     <div className="flex flex-wrap md:flex-nowrap gap-2 items-center animate-in fade-in slide-in-from-top-1 overflow-x-auto pb-1">
-                        <select className="border border-slate-200 rounded-lg px-3 h-10 text-sm bg-white min-w-[100px] flex-1" value={department} onChange={(e) => handleDepartmentChange(e.target.value)}>
+                        <select
+                            className="border border-slate-200 rounded-lg px-3 h-10 text-sm bg-white min-w-[100px] flex-1 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                            value={department}
+                            onChange={(e) => handleDepartmentChange(e.target.value)}
+                            disabled={!isAdmin}
+                        >
                             <option value="">Dept</option>
+                            {department && !options.departments.includes(department) && (
+                                <option value={department}>{department}</option>
+                            )}
                             {options.departments.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
                         </select>
                         <select className="border border-slate-200 rounded-lg px-3 h-10 text-sm bg-white min-w-[100px] flex-1" value={model} onChange={(e) => handleModelChange(e.target.value)}>

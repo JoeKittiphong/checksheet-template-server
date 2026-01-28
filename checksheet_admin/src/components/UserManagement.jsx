@@ -11,6 +11,7 @@ const UserManagement = ({ onBack }) => {
     const [formData, setFormData] = useState({
         code: '',
         username: '',
+        department: '',
         password: '',
         role: 'worker'
     });
@@ -48,7 +49,7 @@ const UserManagement = ({ onBack }) => {
 
     const handleOpenAdd = () => {
         setEditingUser(null);
-        setFormData({ code: '', username: '', password: '', role: 'worker' });
+        setFormData({ code: '', username: '', department: '', password: '', role: 'worker' });
         setError('');
         setShowModal(true);
     };
@@ -58,6 +59,7 @@ const UserManagement = ({ onBack }) => {
         setFormData({
             code: user.code,
             username: user.username,
+            department: user.department || '',
             password: '',
             role: user.role
         });
@@ -169,6 +171,7 @@ const UserManagement = ({ onBack }) => {
                                 <th className="px-6 py-4 font-semibold text-gray-600 text-sm">Status</th>
                                 <th className="px-6 py-4 font-semibold text-gray-600 text-sm">Code (Employee ID)</th>
                                 <th className="px-6 py-4 font-semibold text-gray-600 text-sm">Username</th>
+                                <th className="px-6 py-4 font-semibold text-gray-600 text-sm">Department</th>
                                 <th className="px-6 py-4 font-semibold text-gray-600 text-sm">Role</th>
                                 <th className="px-6 py-4 font-semibold text-gray-600 text-sm">Last Activity</th>
                                 <th className="px-6 py-4 font-semibold text-gray-600 text-sm text-right">Actions</th>
@@ -188,6 +191,7 @@ const UserManagement = ({ onBack }) => {
                                         </td>
                                         <td className="px-6 py-4 text-sm font-medium text-gray-800">{u.code}</td>
                                         <td className="px-6 py-4 text-sm text-gray-600">{u.username}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-600">{u.department || '-'}</td>
                                         <td className="px-6 py-4 text-sm capitalize">
                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${['admin', 'manager', 'supervisor', 'engineer'].includes(u.role) ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
                                                 }`}>
@@ -228,7 +232,7 @@ const UserManagement = ({ onBack }) => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-10 text-center text-gray-400">
+                                    <td colSpan="7" className="px-6 py-10 text-center text-gray-400">
                                         No users found matching "{searchTerm}"
                                     </td>
                                 </tr>
@@ -265,6 +269,21 @@ const UserManagement = ({ onBack }) => {
                                     value={formData.username}
                                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Department
+                                </label>
+                                <select
+                                    className="w-full border p-2 rounded-lg"
+                                    value={formData.department}
+                                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                                >
+                                    <option value="">Select Department</option>
+                                    <option value="EDM">EDM</option>
+                                    <option value="EDW">EDW</option>
+                                    <option value="IMM">IMM</option>
+                                </select>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
