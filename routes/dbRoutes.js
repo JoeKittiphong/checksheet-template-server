@@ -4,7 +4,75 @@ const pool = require('../config/db');
 const { authenticateToken, requireAdmin, ADMIN_ROLES } = require('../middleware/auth');
 const { logActivity } = require('../utils/logger');
 
-// ... [Keep imports and existing code up to /options] ...
+// Save or Update form data
+router.post('/api/save-form', authenticateToken, async (req, res) => {
+    const { id, department, model, machine_no, as_group, checksheet_name, checksheet_data } = req.body;
+
+    try {
+        let result;
+        let action_type = 'UPDATE_CHECKSHEET';
+
+        if (id) {
+            // Update existing record
+            result = await pool.query(
+                `UPDATE as_checksheet_db 
+                 SET department = $1, model = $2, machine_no = $3, as_group = $4, checksheet_name = $5, checksheet_data = $6, updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $7 RETURNING *`,
+                [department, model, machine_no, as_group, checksheet_name, checksheet_data, id]
+            );
+            if (result.rows.length === 0) {
+                return res.status(404).json({ success: false, error: 'Form not found for update' });
+            }
+        } else {
+            // Insert new record
+            action_type = 'CREATE_CHECKSHEET';
+            result = await pool.query(
+                `INSERT INTO as_checksheet_db (department, model, machine_no, as_group, checksheet_name, checksheet_data, created_at, updated_at) 
+                 VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *`,
+                [department, model, machine_no, as_group, checksheet_name, checksheet_data]
+            );
+        }
+
+        const savedItem = result.rows[0];
+
+        // Audit Logging
+        await logActivity({
+            user_code: req.user.code,
+            username: req.user.username,
+            action_type: action_type,
+            target_id: savedItem.id.toString(),
+            details: {
+                info: `${action_type === 'CREATE_CHECKSHEET' ? 'Created' : 'Updated'} checksheet: ${checksheet_name}`,
+                metadata: { department, model, machine_no, as_group, checksheet_name }
+            },
+            req
+        });
+
+        res.json({ success: true, message: 'Data saved successfully', data: savedItem });
+    } catch (err) {
+        console.error('Error in /api/save-form:', err);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error while saving data',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+    }
+});
+
+// Load form data by ID
+router.get('/api/load-form/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM as_checksheet_db WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Form data not found' });
+        }
+        res.json({ success: true, data: result.rows[0] });
+    } catch (err) {
+        console.error('Error loading form by ID:', err);
+        res.status(500).json({ success: false, error: 'Error loading form data' });
+    }
+});
 
 // Get distinct values for dropdowns (with cascading filter)
 router.get('/options', authenticateToken, async (req, res) => {
@@ -143,7 +211,6 @@ router.get('/search', authenticateToken, async (req, res) => {
     }
 });
 
-// ... [Keep updates and logic] ...
 
 // Load form data by machine info
 router.get('/api/load-form-by-machine', authenticateToken, async (req, res) => {
