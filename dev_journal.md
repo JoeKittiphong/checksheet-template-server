@@ -22,3 +22,11 @@
 ### 4. โครงสร้างพื้นฐาน (Infrastructure)
 - **Git Initialization**: จัดเตรียมโครงสร้างไฟล์ `.gitignore` และสอบทานความพร้อมสำหรับการนำขึ้น Version Control
 - **Environment Setup**: ตรวจสอบการใช้งานไฟล์ `.env` และการตั้งค่า Port (`process.env.SERVER_PORT`) ให้ Server รันได้อย่างไม่มีปัญหา Error Port ชนกัน
+
+### 5. การเสริมความปลอดภัยและแก้ปัญหา Redirect Loop
+_2026-01-29_
+
+ปรับปรุงระบบความปลอดภัยของ Server ให้รัดกุมขึ้นเพื่อรองรับการใช้งานผ่านฟรอนต์เอนด์ที่มีระบบ Cache:
+- **Strict Token Verification**: อัปเดต `as_server.js` ในส่วนการ Serve Static Forms (`/form/*`) ให้ใช้ `jwt.verify` ตรวจสอบความถูกต้องของ Token ก่อนส่งไฟล์ `index.html` เสมอ เพื่อป้องกันไม่ให้ User ที่ Session หมดอายุเข้าถึงตัวฟอร์มได้
+- **Admin API Protection**: นำ `authenticateToken` middleware ไปติดตั้งครอบคลุมที่ `/api/admin` ทั้งหมด ทำให้หน้า Dashboard ของ Admin Panel จะไม่แสดงข้อมูลใดๆ หากผู้ใช้ไม่ได้ Login หรือ Session หมดอายุ
+- **Cookie Management**: เพิ่มการสั่ง `res.clearCookie('token')` เมื่อตรวจพบว่า Token ไม่ถูกต้องหรือหมดอายุ เพื่อล้างสถานะตกค้างใน Browser ทันที

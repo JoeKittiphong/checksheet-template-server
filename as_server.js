@@ -4,7 +4,8 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const cookieParser = require('cookie-parser');
-const { authenticateToken } = require('./middleware/auth');
+const { authenticateToken, JWT_SECRET } = require('./middleware/auth');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -32,7 +33,7 @@ const adminRoutes = require('./routes/adminRoutes');
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/logs', logRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin', authenticateToken, adminRoutes);
 app.use('/', formRoutes);
 app.use('/', dbRoutes);
 
@@ -42,20 +43,32 @@ app.use('/', dbRoutes);
 const formsDir = path.join(__dirname, 'checksheet_form');
 
 // SPA Fallback for Dynamic Forms (/form/edw, etc.)
+
+// SPA Fallback for Dynamic Forms (/form/edw, etc.)
 app.get(/^\/form\/([^/]+)(?:\/.*)?$/, (req, res, next) => {
     // Check authentication and redirect to login if not authenticated
     const token = req.cookies.token;
     if (!token) return res.redirect('/');
 
-    const formName = req.params[0];
-    if (req.path.match(/\.\w+$/)) return next();
+    // Verify token validity to prevent "bounce"
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            // Token invalid or expired
+            res.clearCookie('token');
+            return res.redirect('/');
+        }
 
-    const formPath = path.join(formsDir, formName, 'index.html');
-    if (fs.existsSync(formPath)) {
-        res.sendFile(formPath);
-    } else {
-        res.status(404).send('Form not found');
-    }
+        // Token is valid, proceed
+        const formName = req.params[0];
+        if (req.path.match(/\.\w+$/)) return next();
+
+        const formPath = path.join(formsDir, formName, 'index.html');
+        if (fs.existsSync(formPath)) {
+            res.sendFile(formPath);
+        } else {
+            res.status(404).send('Form not found');
+        }
+    });
 });
 
 // Admin Panel (Public)
