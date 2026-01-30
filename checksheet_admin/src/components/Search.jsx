@@ -425,7 +425,7 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
 
             {/* Content Area */}
             {searchData.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-10 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                     {searchData.map((item, index) => (
                         <FolderCard
                             key={index}

@@ -32,7 +32,7 @@ const FolderCard = ({ item, onClick, onDeleteClick, isPreview = false, isAdmin =
             </div>
 
             {/* Folder Body - Uses Department color */}
-            <div className={`relative mt-4 w-45 aspect-[4/3] rounded-xl rounded-tl-none p-3 flex flex-col justify-between shadow-lg z-10 transition-all duration-300 ${folderColor} group-hover:ring-4 group-hover:ring-white/40 text-white`}>
+            <div className={`relative mt-4 w-full aspect-[4/3] rounded-xl rounded-tl-none p-3 flex flex-col justify-between shadow-lg z-10 transition-all duration-300 ${folderColor} group-hover:ring-4 group-hover:ring-white/40 text-white`}>
 
                 {/* Header with Trash Icon */}
                 <div className="flex justify-end h-6">
