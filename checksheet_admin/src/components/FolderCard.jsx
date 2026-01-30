@@ -8,7 +8,7 @@ const TrashIcon = () => (
     </svg>
 );
 
-const FolderCard = ({ item, onClick, onDeleteClick, isPreview = false, isAdmin = false }) => {
+const FolderCard = ({ item, onClick, onDeleteClick, onConfirmClick, isPreview = false, isAdmin = false }) => {
     const folderColor = getDepartmentColor(item.department || item.departmentName);
     const tabColor = getGroupColor(item.as_group || item.asGroup);
 
@@ -34,8 +34,23 @@ const FolderCard = ({ item, onClick, onDeleteClick, isPreview = false, isAdmin =
             {/* Folder Body - Uses Department color */}
             <div className={`relative mt-4 w-full aspect-[4/3] rounded-xl rounded-tl-none p-3 flex flex-col justify-between shadow-lg z-10 transition-all duration-300 ${folderColor} group-hover:ring-4 group-hover:ring-white/40 text-white`}>
 
-                {/* Header with Trash Icon */}
-                <div className="flex justify-end h-6">
+                {/* Header with Trash Icon and Confirm Button */}
+                <div className="flex justify-end h-6 gap-1">
+                    {!isPreview && isAdmin && item.status === 'finish' && (
+                        <button
+                            onClick={(e) => {
+                                console.log('FolderCard confirm clicked for:', item);
+                                e.stopPropagation();
+                                if (onConfirmClick) onConfirmClick(item);
+                            }}
+                            className="p-1.5 -m-1 rounded-full bg-white/10 hover:bg-green-500/80 text-white/90 hover:text-white transition-all shadow-sm animate-pulse"
+                            title="Confirm this checksheet"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
+                            </svg>
+                        </button>
+                    )}
                     {!isPreview && isAdmin && (
                         <button
                             onClick={handleTrashClick}
@@ -55,6 +70,10 @@ const FolderCard = ({ item, onClick, onDeleteClick, isPreview = false, isAdmin =
                         </h3>
                         <p className="text-2xl font-black text-white mt-1 tracking-tight group-hover:scale-110 transition-transform">
                             {item.machine_no || item.machineNo || 'NO.00'}
+                        </p>
+                        {/* Status Text (Small) */}
+                        <p className="text-[9px] uppercase font-bold mt-1 opacity-80 bg-black/20 px-1.5 rounded">
+                            {item.status || 'PREPARE'}
                         </p>
                     </div>
                 </div>

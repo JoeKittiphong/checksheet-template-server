@@ -161,6 +161,28 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
     };
 
 
+    const handleConfirm = async (item) => {
+        console.log("handleConfirm clicked for:", item);
+        if (!confirm(`Confirm checksheet for ${item.machine_no}?`)) return;
+
+        try {
+            const apiBase = import.meta.env.VITE_DATABASE_URL || '';
+            const response = await axios.patch(
+                `${apiBase}/api/update-status/${item.id}`,
+                { status: 'confirm' },
+                { withCredentials: true }
+            );
+
+            if (response.data.success) {
+                // Refresh data
+                handleSearch();
+            }
+        } catch (error) {
+            console.error('Error confirming checksheet:', error);
+            alert('Failed to confirm checksheet');
+        }
+    };
+
     const handleOpenForm = (item) => {
         const formConfig = availableForms.find(f => f.name === item.checksheet_name);
         if (formConfig) {
@@ -426,15 +448,18 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
             {/* Content Area */}
             {searchData.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                    {searchData.map((item, index) => (
-                        <FolderCard
-                            key={index}
-                            item={item}
-                            onClick={() => handleOpenForm(item)}
-                            onDeleteClick={handleDeleteClick}
-                            isAdmin={isAdmin}
-                        />
-                    ))}
+                    {searchData
+                        .filter(item => isAdmin || item.status === 'work_in_progress')
+                        .map((item, index) => (
+                            <FolderCard
+                                key={index}
+                                item={item}
+                                onClick={() => handleOpenForm(item)}
+                                onDeleteClick={handleDeleteClick}
+                                onConfirmClick={handleConfirm}
+                                isAdmin={isAdmin}
+                            />
+                        ))}
                 </div>
             ) : (
                 <div className="flex flex-col items-center justify-center py-20 text-slate-400 bg-white/50 rounded-2xl border-2 border-dashed border-slate-200">

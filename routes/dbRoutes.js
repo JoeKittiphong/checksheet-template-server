@@ -6,19 +6,22 @@ const { logActivity } = require('../utils/logger');
 
 // Save or Update form data
 router.post('/api/save-form', authenticateToken, async (req, res) => {
-    const { id, department, model, machine_no, as_group, checksheet_name, checksheet_data } = req.body;
+    const { id, department, model, machine_no, as_group, checksheet_name, checksheet_data, status } = req.body;
 
     try {
         let result;
         let action_type = 'UPDATE_CHECKSHEET';
 
+        // Default status to 'prepare' if not provided
+        const safeStatus = status || 'prepare';
+
         if (id) {
             // Update existing record
             result = await pool.query(
                 `UPDATE as_checksheet_db 
-                 SET department = $1, model = $2, machine_no = $3, as_group = $4, checksheet_name = $5, checksheet_data = $6, updated_at = CURRENT_TIMESTAMP
-                 WHERE id = $7 RETURNING *`,
-                [department, model, machine_no, as_group, checksheet_name, checksheet_data, id]
+                 SET department = $1, model = $2, machine_no = $3, as_group = $4, checksheet_name = $5, checksheet_data = $6, status = $7, updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $8 RETURNING *`,
+                [department, model, machine_no, as_group, checksheet_name, checksheet_data, safeStatus, id]
             );
             if (result.rows.length === 0) {
                 return res.status(404).json({ success: false, error: 'Form not found for update' });
@@ -27,9 +30,9 @@ router.post('/api/save-form', authenticateToken, async (req, res) => {
             // Insert new record
             action_type = 'CREATE_CHECKSHEET';
             result = await pool.query(
-                `INSERT INTO as_checksheet_db (department, model, machine_no, as_group, checksheet_name, checksheet_data, created_at, updated_at) 
-                 VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *`,
-                [department, model, machine_no, as_group, checksheet_name, checksheet_data]
+                `INSERT INTO as_checksheet_db (department, model, machine_no, as_group, checksheet_name, checksheet_data, status, created_at, updated_at) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *`,
+                [department, model, machine_no, as_group, checksheet_name, checksheet_data, safeStatus]
             );
         }
 
@@ -42,8 +45,8 @@ router.post('/api/save-form', authenticateToken, async (req, res) => {
             action_type: action_type,
             target_id: savedItem.id.toString(),
             details: {
-                info: `${action_type === 'CREATE_CHECKSHEET' ? 'Created' : 'Updated'} checksheet: ${checksheet_name}`,
-                metadata: { department, model, machine_no, as_group, checksheet_name }
+                info: `${action_type === 'CREATE_CHECKSHEET' ? 'Created' : 'Updated'} checksheet: ${checksheet_name} (Status: ${safeStatus})`,
+                metadata: { department, model, machine_no, status: safeStatus }
             },
             req
         });
@@ -56,6 +59,43 @@ router.post('/api/save-form', authenticateToken, async (req, res) => {
             error: 'Internal server error while saving data',
             details: process.env.NODE_ENV === 'development' ? err.message : undefined
         });
+    }
+});
+
+// Update checksheet status
+router.patch('/api/update-status/:id', authenticateToken, requireAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    try {
+        const result = await pool.query(
+            'UPDATE as_checksheet_db SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+            [status, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Checksheet not found' });
+        }
+
+        const updatedItem = result.rows[0];
+
+        // Audit Log
+        await logActivity({
+            user_code: req.user.code,
+            username: req.user.username,
+            action_type: 'UPDATE_STATUS',
+            target_id: id,
+            details: {
+                info: `Updated status to ${status}`,
+                metadata: { status }
+            },
+            req
+        });
+
+        res.json({ success: true, data: updatedItem });
+    } catch (err) {
+        console.error('Error updating status:', err);
+        res.status(500).json({ success: false, error: 'Error updating status' });
     }
 });
 
@@ -163,7 +203,7 @@ router.get('/search', authenticateToken, async (req, res) => {
 
     let query = `
         SELECT 
-            id, department, model, machine_no, as_group, checksheet_name, 
+            id, department, model, machine_no, as_group, checksheet_name, status,
             CASE 
                 WHEN checksheet_data IS NOT NULL AND checksheet_data::text != '{}' THEN true 
                 ELSE false 
