@@ -62,6 +62,37 @@ router.post('/api/save-form', authenticateToken, async (req, res) => {
     }
 });
 
+// Endpoint to create a new form record from Admin Panel
+router.post('/new', authenticateToken, async (req, res) => {
+    const { department, model, machine_no, as_group, checksheet_name } = req.body;
+    try {
+        const result = await pool.query(
+            `INSERT INTO as_checksheet_db (department, model, machine_no, as_group, checksheet_name, status, created_at, updated_at) 
+             VALUES ($1, $2, $3, $4, $5, 'prepare', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *`,
+            [department, model, machine_no, as_group, checksheet_name]
+        );
+
+        const newItem = result.rows[0];
+
+        await logActivity({
+            user_code: req.user.code,
+            username: req.user.username,
+            action_type: 'CREATE_CHECKSHEET',
+            target_id: newItem.id.toString(),
+            details: {
+                info: `Created new checksheet folder: ${checksheet_name}`,
+                metadata: { department, model, machine_no }
+            },
+            req
+        });
+
+        res.json({ success: true, message: 'New form record created', data: newItem });
+    } catch (err) {
+        console.error('Error in /new:', err);
+        res.status(500).json({ success: false, error: 'Internal server error while creating new form' });
+    }
+});
+
 // Update checksheet status
 router.patch('/api/update-status/:id', authenticateToken, requireAdmin, async (req, res) => {
     const { id } = req.params;

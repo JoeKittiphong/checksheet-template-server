@@ -37,6 +37,12 @@ app.use('/api/admin', authenticateToken, adminRoutes);
 app.use('/', formRoutes);
 app.use('/', dbRoutes);
 
+// Upload Routes
+const uploadRoutes = require('./routes/upload');
+app.use('/api/upload', authenticateToken, uploadRoutes);
+app.use('/uploads/assy_problem_images', authenticateToken, express.static(path.join(__dirname, 'assy_problem_images'))); // Serve new location
+app.use('/uploads', authenticateToken, express.static(path.join(__dirname, 'uploads'))); // Serve legacy location
+
 // ============================================
 // SERVE STATIC FORMS & ADMIN PANEL
 // ============================================

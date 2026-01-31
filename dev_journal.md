@@ -30,3 +30,15 @@ _2026-01-29_
 - **Strict Token Verification**: อัปเดต `as_server.js` ในส่วนการ Serve Static Forms (`/form/*`) ให้ใช้ `jwt.verify` ตรวจสอบความถูกต้องของ Token ก่อนส่งไฟล์ `index.html` เสมอ เพื่อป้องกันไม่ให้ User ที่ Session หมดอายุเข้าถึงตัวฟอร์มได้
 - **Admin API Protection**: นำ `authenticateToken` middleware ไปติดตั้งครอบคลุมที่ `/api/admin` ทั้งหมด ทำให้หน้า Dashboard ของ Admin Panel จะไม่แสดงข้อมูลใดๆ หากผู้ใช้ไม่ได้ Login หรือ Session หมดอายุ
 - **Cookie Management**: เพิ่มการสั่ง `res.clearCookie('token')` เมื่อตรวจพบว่า Token ไม่ถูกต้องหรือหมดอายุ เพื่อล้างสถานะตกค้างใน Browser ทันที
+
+### 6. การจัดการสถานะ Checksheet และ API ปลายทาง
+_2026-01-30_
+
+ปรับปรุงฝั่ง Server เพื่อรองรับ Logic สถานะใหม่และการแสดงผลใน Admin Panel:
+
+- **Status API**:
+  - เพิ่ม Route `PATCH /api/update-status/:id` ใน `dbRoutes.js` เพื่อรองรับการอัปเดตสถานะแยกต่างหาก (แก้ปัญหาปุ่ม Confirm ใช้งานไม่ได้)
+- **Filtered Response**:
+  - ปรับปรุง Logic ใน `Search.jsx` (ฝั่ง Admin Frontend แต่ code อยู่ Repo นี้) ให้กรองข้อมูลตาม Role ของผู้ใช้ (Worker เห็นเฉพาะงานที่ทำค้างอยู่) เพื่อ UX ที่ดีขึ้น
+- **Debugging**:
+  - เพิ่ม Console Log ในจุดสำคัญๆ เพื่อช่วย Trace ปัญหาการเชื่อมต่อระหว่าง Admin กับ Form

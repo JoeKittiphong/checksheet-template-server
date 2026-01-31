@@ -3,3 +3,5 @@ node_modules
 .DS_Store
 dist
 checksheet_form/
+assy_problem_images/
+uploads/
