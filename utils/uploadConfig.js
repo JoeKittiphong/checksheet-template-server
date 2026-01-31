@@ -11,7 +11,21 @@ if (!fs.existsSync(uploadDir)) {
 // Storage configuration
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, uploadDir);
+        // Dynamic Destination: Year/Month
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+
+        const subFolder = path.join(uploadDir, `${year}/${month}`); // OS-specific path separators
+
+        if (!fs.existsSync(subFolder)) {
+            fs.mkdirSync(subFolder, { recursive: true });
+        }
+
+        // We attach the relative path to the request object so the route handler can use it
+        req.fileRelativePath = `${year}/${month}`; // standardized forward slash for URL
+
+        cb(null, subFolder);
     },
     filename: (req, file, cb) => {
         // extract metadata from body (multer processes text fields before files if appended order is correct)

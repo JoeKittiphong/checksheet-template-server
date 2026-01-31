@@ -63,6 +63,14 @@ const AddModal = ({ isOpen, onClose, onSuccess, availableForms }) => { // Remove
         console.log("Filtering Forms:", { newDepartment, newModel, newAsGroup, isCustomModel });
 
         const matches = availableForms.filter(f => {
+            // GLOBAL EXCEPTION: Always show ASSY_PROBLEM regardless of filters
+            // Note: We check f.name or f.form_name. Based on debugs, f.name is "ASSY PROBLEM FORM" or similar.
+            // Let's use includes or a known constant if possible.
+            // Better to check specific unique ID if available, but name works.
+            if (f.name && f.name.includes("ASSY PROBLEM")) {
+                return true;
+            }
+
             const deptMatch = f.department === newDepartment;
             const groupMatch = f.as_group === newAsGroup;
 
@@ -72,16 +80,16 @@ const AddModal = ({ isOpen, onClose, onSuccess, availableForms }) => { // Remove
             // 3. If Variant Match -> newModel starts with f.model (e.g. "AL40G Plus" uses "AL40G" template)
             const modelMatch = isCustomModel ? true : (f.model === newModel || (f.model && newModel.startsWith(f.model)));
 
-            // Debug individual mismatches if needed
-            if (!deptMatch || !groupMatch || !modelMatch) {
-                // console.log(`Skipping ${f.name}: D:${deptMatch} G:${groupMatch} M:${modelMatch} (${f.model} vs ${newModel})`);
-            }
-            // Strict Debugging
-            if (f.model.includes('AL')) {
-                console.log(`Checking ${f.name} (Model: "${f.model}") against Selection: "${newModel}" -> Match? ${modelMatch}`);
-            }
-
             return deptMatch && groupMatch && modelMatch;
+        });
+
+        // SORTING: Prioritize ASSY_PROBLEM at the top
+        matches.sort((a, b) => {
+            const isAssyA = a.name && a.name.includes("ASSY PROBLEM");
+            const isAssyB = b.name && b.name.includes("ASSY PROBLEM");
+            if (isAssyA && !isAssyB) return -1;
+            if (!isAssyA && isAssyB) return 1;
+            return 0; // Keep relative order otherwise
         });
 
         console.log("Matches Found:", matches.length);
@@ -241,13 +249,33 @@ const AddModal = ({ isOpen, onClose, onSuccess, availableForms }) => { // Remove
                         <div className="relative">
                             <select
                                 className="bg-slate-50 border border-slate-300 rounded-lg px-4 h-10 w-full text-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all appearance-none disabled:bg-slate-100 disabled:text-slate-400"
-                                value={newChecksheetName}
-                                onChange={(e) => setNewChecksheetName(e.target.value)}
+                                value={
+                                    newChecksheetName === ""
+                                        ? ""
+                                        : filteredForms.findIndex(f => f.name === newChecksheetName && f.machine_no === newMachineNo)
+                                }
+                                onChange={(e) => {
+                                    const idx = e.target.value;
+                                    if (idx === "") {
+                                        setNewChecksheetName("");
+                                        setNewMachineNo(""); // Clear machine no if form type is cleared
+                                        return;
+                                    }
+                                    const selectedForm = filteredForms[parseInt(idx, 10)];
+                                    if (selectedForm) {
+                                        setNewChecksheetName(selectedForm.name);
+                                        if (selectedForm.machine_no && selectedForm.machine_no !== 'UNKNOWN') {
+                                            setNewMachineNo(selectedForm.machine_no);
+                                        } else {
+                                            setNewMachineNo(""); // Clear if the selected form doesn't have a specific machine_no
+                                        }
+                                    }
+                                }}
                                 disabled={!newModel || !newAsGroup}
                             >
                                 <option value="">{newModel && newAsGroup ? 'Select Checksheet Template...' : 'Select Model & Group First'}</option>
                                 {filteredForms.map((form, i) => (
-                                    <option key={i} value={form.name} className="text-slate-900">{form.label}</option>
+                                    <option key={i} value={i} className="text-slate-900">{form.label}</option>
                                 ))}
                                 {filteredForms.length === 0 && newModel && newAsGroup && (
                                     <option value="" disabled className="text-slate-400 font-style-italic">-- No recommended forms --</option>

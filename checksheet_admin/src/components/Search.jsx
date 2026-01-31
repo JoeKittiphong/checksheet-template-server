@@ -184,23 +184,46 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
     };
 
     const handleOpenForm = (item) => {
+        // Find the matching template configuration
         const formConfig = availableForms.find(f => f.name === item.checksheet_name);
+
         if (formConfig) {
-            let url;
+            // Base path might already have query params (e.g., /ASSY_PROBLEM?machine_no=NO.1)
+            // separate base path and existing query params
+            const [basePath, existingQueryString] = formConfig.path.split('?');
+            const searchParams = new URLSearchParams(existingQueryString || '');
+
             if (item.has_data) {
-                url = `${FORM_BASE_URL}${formConfig.path}/?id=${item.id}`;
+                // If opening existing record
+                searchParams.set('id', item.id);
             } else {
-                const params = new URLSearchParams({
-                    record_id: item.id,
-                    department: item.department,
-                    model: item.model,
-                    machine_no: item.machine_no,
-                    as_group: item.as_group,
-                    new: 'true'
-                });
-                url = `${FORM_BASE_URL}${formConfig.path}/?${params.toString()}`;
+                // If creating new record
+                // Only set if not already provided by the template config (priority to item data if exists)
+                searchParams.set('record_id', item.id);
+                // Ensure we respect the item's stored data first, but fallback to template config
+                if (item.department) searchParams.set('department', item.department);
+                if (item.model) searchParams.set('model', item.model);
+                // Use the item's machine_no if it exists (the "saved as something else" fix)
+                if (item.machine_no) searchParams.set('machine_no', item.machine_no);
+                if (item.as_group) searchParams.set('as_group', item.as_group);
+
+                searchParams.set('new', 'true');
             }
+
+            // Construct Final URL
+            // Ensure no double slashes if basePath ends with /
+            const cleanBasePath = basePath.replace(/\/$/, '');
+            // We do NOT add another slash before '?'
+            const url = `${FORM_BASE_URL}${cleanBasePath}/?${searchParams.toString()}`;
+
+            // Note: Some legacy logic might expect /?id=... directly after the folder name.
+            // But usually browsers handle path/?query fine. 
+            // However, the original code had: `${formConfig.path}/?id=${item.id}` 
+            // If formConfig.path was "/ASSY_PROBLEM", result was "/ASSY_PROBLEM/?id=123" (Note the slash before ?)
+            // So let's keep that slash if it's standard for this app.
+
             window.location.href = url;
+
         } else {
             alert('ไม่พบ Form สำหรับ: ' + item.checksheet_name);
         }
@@ -401,9 +424,25 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
                             <option value="">Group</option>
                             {options.asGroups.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
                         </select>
-                        <select className="border border-slate-200 rounded-lg px-3 h-10 text-sm bg-white min-w-[100px] flex-1" value={checksheetName} onChange={(e) => setChecksheetName(e.target.value)}>
+                        <select className="border border-slate-200 rounded-lg px-3 h-10 text-sm bg-white min-w-[100px] flex-1"
+                            value={availableForms.findIndex(f => f.name === checksheetName && (machineNo ? f.machine_no === machineNo : true)) !== -1 ? availableForms.findIndex(f => f.name === checksheetName && (machineNo ? f.machine_no === machineNo : true)) : ""}
+                            onChange={(e) => {
+                                const idx = e.target.value;
+                                if (idx === "") {
+                                    setChecksheetName("");
+                                    return;
+                                }
+                                const selectedForm = availableForms[parseInt(idx, 10)];
+                                if (selectedForm) {
+                                    setChecksheetName(selectedForm.name);
+                                    if (selectedForm.machine_no && selectedForm.machine_no !== 'UNKNOWN') {
+                                        setMachineNo(selectedForm.machine_no);
+                                    }
+                                }
+                            }}
+                        >
                             <option value="">Form</option>
-                            {availableForms.map((form, i) => <option key={i} value={form.name}>{form.name}</option>)}
+                            {availableForms.map((form, i) => <option key={i} value={i}>{form.label}</option>)}
                         </select>
                         <button
                             className="h-10 px-4 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-lg whitespace-nowrap"

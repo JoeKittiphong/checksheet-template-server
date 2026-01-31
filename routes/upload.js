@@ -11,10 +11,13 @@ router.post('/assy', upload.single('image'), async (req, res) => {
         }
 
         // Return the filename so frontend can save it
+        // If uploadConfig attached a relative path (e.g. "2024/01"), prepend it.
+        const relativePath = req.fileRelativePath ? `${req.fileRelativePath}/${req.file.filename}` : req.file.filename;
+
         res.json({
             success: true,
             message: 'File uploaded successfully',
-            filename: req.file.filename,
+            filename: relativePath, // Returns "2024/01/model-machine-date.png"
             path: req.file.path
         });
     } catch (err) {
