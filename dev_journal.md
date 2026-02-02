@@ -42,3 +42,48 @@ _2026-01-30_
   - ปรับปรุง Logic ใน `Search.jsx` (ฝั่ง Admin Frontend แต่ code อยู่ Repo นี้) ให้กรองข้อมูลตาม Role ของผู้ใช้ (Worker เห็นเฉพาะงานที่ทำค้างอยู่) เพื่อ UX ที่ดีขึ้น
 - **Debugging**:
   - เพิ่ม Console Log ในจุดสำคัญๆ เพื่อช่วย Trace ปัญหาการเชื่อมต่อระหว่าง Admin กับ Form
+
+### 7. UI Overhaul: List View + Preview Panel (Master-Detail Layout)
+_2026-02-02_
+
+เปลี่ยนหน้า Search จาก Folder Card Grid เป็น List View + Preview Panel:
+
+- **List View (ซ้าย 60%)**:
+  - สร้าง Component ใหม่ `ListItem.jsx` แสดงข้อมูลแบบ Compact ในแถวเดียว
+  - คอลัมน์: `Dept | Group | Model | Machine | Title | Form | Status`
+  - Fixed width ทุกคอลัมน์เพื่อความสวยงามสม่ำเสมอ
+  - Title ดึงจาก `available-forms` API โดยใช้ `meta.json` ของแต่ละ Form
+
+- **Preview Panel (ขวา 40%)**:
+  - สร้าง Component ใหม่ `PreviewPanel.jsx`
+  - แสดง FolderCard ใหญ่ขึ้นพร้อมปุ่ม Open, Confirm, Delete
+  - Empty state เมื่อยังไม่เลือก Item
+
+- **Status Filter**:
+  - เพิ่ม Dropdown เลือก Status (Prepare, Work in Progress, Finish, Confirm)
+  - อัปเดต `/search` API ใน `dbRoutes.js` ให้รับ `status` parameter
+
+### 8. แก้ไข Title Lookup
+_2026-02-02_
+
+- แก้ไข Bug ที่ Title แสดง "-" แทนที่จะแสดงชื่อจริง
+- ปัญหา: `meta.json` ถูก spread ตรงเป็น `formConfig.title` ไม่ใช่ `formConfig.meta.title`
+- Fallback chain: `title → header → label → checksheet_name → '-'`
+
+### 9. โครงสร้างไฟล์ใหม่
+_2026-02-02_
+
+```
+checksheet_admin/src/components/
+├── ListItem.jsx       (NEW) - แถวข้อมูลแบบ Compact
+├── PreviewPanel.jsx   (NEW) - แสดง Preview ด้านขวา
+├── FolderCard.jsx     - ใช้ใน Preview
+├── Search.jsx         - แก้ไขเป็น Master-Detail Layout
+└── ...
+```
+
+### 10. การแปลภาษา (Localization)
+_2026-02-02_
+
+- แปล Label ใน `ImageUploadBox.jsx`: "(Click to upload)" → "(คลิกเพื่อแนบ)"
+- แปล Label ใน `ASSY_PROBLEM/Page1.jsx`: "Attach Problem Image" → "แนบภาพปัญหาที่พบ"

@@ -64,9 +64,6 @@ const AddModal = ({ isOpen, onClose, onSuccess, availableForms }) => { // Remove
 
         const matches = availableForms.filter(f => {
             // GLOBAL EXCEPTION: Always show ASSY_PROBLEM regardless of filters
-            // Note: We check f.name or f.form_name. Based on debugs, f.name is "ASSY PROBLEM FORM" or similar.
-            // Let's use includes or a known constant if possible.
-            // Better to check specific unique ID if available, but name works.
             if (f.name && f.name.includes("ASSY PROBLEM")) {
                 return true;
             }
@@ -74,11 +71,34 @@ const AddModal = ({ isOpen, onClose, onSuccess, availableForms }) => { // Remove
             const deptMatch = f.department === newDepartment;
             const groupMatch = f.as_group === newAsGroup;
 
-            // Logic: 
-            // 1. If Custom Model -> Show All in Dept/Group (or true)
-            // 2. If Strict Match -> f.model === newModel
-            // 3. If Variant Match -> newModel starts with f.model (e.g. "AL40G Plus" uses "AL40G" template)
-            const modelMatch = isCustomModel ? true : (f.model === newModel || (f.model && newModel.startsWith(f.model)));
+            // Model matching logic:
+            // 1. If Custom Model -> show all forms in Dept/Group
+            // 2. If form has available_models array -> flexible match (case-insensitive)
+            // 3. Otherwise -> strict match or variant match
+            let modelMatch = false;
+            const modelLower = (newModel || '').toLowerCase();
+
+            if (isCustomModel) {
+                modelMatch = true;
+            } else if (f.available_models && Array.isArray(f.available_models)) {
+                // Flexible match: case-insensitive, check exact, contains, or base model
+                modelMatch = f.available_models.some(am => {
+                    const amLower = am.toLowerCase();
+                    const baseModel = amLower.split('(')[0]; // e.g. "aln400g"
+                    const newBaseModel = modelLower.split('(')[0]; // e.g. "aln400g"
+                    return amLower === modelLower ||
+                        modelLower.includes(amLower) ||
+                        amLower.includes(modelLower) ||
+                        baseModel === newBaseModel; // Match base model name
+                });
+                console.log(`Checking ${f.name}: available_models=${JSON.stringify(f.available_models)}, newModel=${newModel}, match=${modelMatch}`);
+            } else {
+                // Legacy: single model string matching (case-insensitive)
+                const fModelLower = (f.model || '').toLowerCase();
+                modelMatch = fModelLower === modelLower ||
+                    modelLower.startsWith(fModelLower) ||
+                    fModelLower.includes(modelLower);
+            }
 
             return deptMatch && groupMatch && modelMatch;
         });
@@ -89,7 +109,7 @@ const AddModal = ({ isOpen, onClose, onSuccess, availableForms }) => { // Remove
             const isAssyB = b.name && b.name.includes("ASSY PROBLEM");
             if (isAssyA && !isAssyB) return -1;
             if (!isAssyA && isAssyB) return 1;
-            return 0; // Keep relative order otherwise
+            return 0;
         });
 
         console.log("Matches Found:", matches.length);
@@ -97,8 +117,6 @@ const AddModal = ({ isOpen, onClose, onSuccess, availableForms }) => { // Remove
         if (matches.length > 0) {
             setFilteredForms(matches);
         } else {
-            // Strict Mode: If no match, show empty (don't fallback to all)
-            // This prevents confusion of seeing forms for other models.
             setFilteredForms([]);
         }
 
@@ -252,23 +270,24 @@ const AddModal = ({ isOpen, onClose, onSuccess, availableForms }) => { // Remove
                                 value={
                                     newChecksheetName === ""
                                         ? ""
-                                        : filteredForms.findIndex(f => f.name === newChecksheetName && f.machine_no === newMachineNo)
+                                        : filteredForms.findIndex(f => f.name === newChecksheetName)
                                 }
                                 onChange={(e) => {
                                     const idx = e.target.value;
+                                    console.log('Form Type onChange:', { idx, filteredForms });
                                     if (idx === "") {
                                         setNewChecksheetName("");
                                         setNewMachineNo(""); // Clear machine no if form type is cleared
                                         return;
                                     }
                                     const selectedForm = filteredForms[parseInt(idx, 10)];
+                                    console.log('Selected Form:', selectedForm);
                                     if (selectedForm) {
                                         setNewChecksheetName(selectedForm.name);
                                         if (selectedForm.machine_no && selectedForm.machine_no !== 'UNKNOWN') {
                                             setNewMachineNo(selectedForm.machine_no);
-                                        } else {
-                                            setNewMachineNo(""); // Clear if the selected form doesn't have a specific machine_no
                                         }
+                                        // Don't clear machine_no if form doesn't have one - user may have entered it
                                     }
                                 }}
                                 disabled={!newModel || !newAsGroup}

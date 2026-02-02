@@ -147,12 +147,15 @@ router.get('/api/load-form/:id', authenticateToken, async (req, res) => {
 
 // Get distinct values for dropdowns (with cascading filter)
 router.get('/options', authenticateToken, async (req, res) => {
-    let { department, model } = req.query;
+    let { department, model, checksheet_name } = req.query;
 
     // Security: Enforce department for non-admins
+    // Exception: ASSY_PROBLEM can access all departments
     const user = req.user;
     const isAdmin = ADMIN_ROLES.includes(user.role);
-    if (!isAdmin) {
+    const isAssyProblem = checksheet_name === 'ASSY_PROBLEM';
+
+    if (!isAdmin && !isAssyProblem) {
         department = user.department;
     }
 
@@ -223,12 +226,15 @@ router.get('/options', authenticateToken, async (req, res) => {
 
 // Search with filters
 router.get('/search', authenticateToken, async (req, res) => {
-    let { department, model, machine_no, as_group, checksheet_name } = req.query;
+    let { department, model, machine_no, as_group, checksheet_name, status } = req.query;
 
     // Security: Enforce department for non-admins
+    // Exception: ASSY_PROBLEM can be viewed across departments
     const user = req.user;
     const isAdmin = ADMIN_ROLES.includes(user.role);
-    if (!isAdmin) {
+    const isAssyProblem = checksheet_name === 'ASSY_PROBLEM';
+
+    if (!isAdmin && !isAssyProblem) {
         department = user.department;
     }
 
@@ -268,6 +274,11 @@ router.get('/search', authenticateToken, async (req, res) => {
     if (checksheet_name) {
         query += ` AND checksheet_name = $${paramIndex}`;
         params.push(checksheet_name);
+        paramIndex++;
+    }
+    if (status) {
+        query += ` AND status = $${paramIndex}`;
+        params.push(status);
         paramIndex++;
     }
 

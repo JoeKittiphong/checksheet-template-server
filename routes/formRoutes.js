@@ -53,6 +53,7 @@ router.get('/available-forms', authenticateToken, async (req, res) => {
                         path: `/${template.id}?machine_no=${machine.machine_no}&model=${machine.model}`, // Pass params in URL
                         department: machine.department || template.department,
                         model: machine.model || template.model,
+                        available_models: template.available_models, // Add available_models from meta
                         as_group: template.as_group,
                         machine_no: machine.machine_no // Explicit machine no
                     });
@@ -66,6 +67,7 @@ router.get('/available-forms', authenticateToken, async (req, res) => {
                     path: `/${template.id}`,
                     department: template.department,
                     model: template.model,
+                    available_models: template.available_models, // Add available_models from meta
                     as_group: template.as_group,
                     machine_no: 'UNKNOWN'
                 });

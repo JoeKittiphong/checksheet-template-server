@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import FolderCard from './FolderCard';
+import ListItem from './ListItem';
+import PreviewPanel from './PreviewPanel';
 import AddModal from './AddModal';
 import DeleteModal from './DeleteModal';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +20,7 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
     const [machineNo, setMachineNo] = useState('');
     const [asGroup, setAsGroup] = useState('');
     const [checksheetName, setChecksheetName] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
 
     // Track if a search has been initiated so we can auto-refresh
     const [hasSearched, setHasSearched] = useState(false);
@@ -25,6 +28,7 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
     const [showAddModal, setShowAddModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
+    const [selectedItem, setSelectedItem] = useState(null);
 
     // Mobile Tab State ('search' or 'settings' or null)
     // Default to 'search' or the last saved state
@@ -114,6 +118,7 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
             if (machineNo) params.append('machine_no', machineNo);
             if (asGroup) params.append('as_group', asGroup);
             if (checksheetName) params.append('checksheet_name', checksheetName);
+            if (statusFilter) params.append('status', statusFilter);
 
             const url = `${apiBase}/search?${params.toString()}&_t=${Date.now()}`;
             const response = await axios.get(url, { withCredentials: true, headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } });
@@ -272,9 +277,17 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
                         <option value="">Form</option>
                         {availableForms.map((form, i) => <option key={i} value={form.name}>{form.name}</option>)}
                     </select>
+                    <select className="border border-slate-200 rounded-lg px-3 h-11 text-sm bg-white text-slate-600 focus:ring-2 focus:ring-slate-400 focus:border-slate-400" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                        <option value="">Status</option>
+                        <option value="prepare">📋 Prepare</option>
+                        <option value="work_in_progress">🔄 Work in Progress</option>
+                        <option value="finish">✅ Finish</option>
+                        <option value="confirm">✔️ Confirm</option>
+                    </select>
 
                     {/* Spacer */}
                     <div className="flex-grow"></div>
+
 
                     {/* Action Buttons */}
                     <button
@@ -484,21 +497,55 @@ function Search({ onNavigate, searchData, setSearchData, onToUsers, onToLogs, on
                 )}
             </div>
 
-            {/* Content Area */}
+            {/* Content Area - Master Detail Layout */}
             {searchData.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                    {searchData
-                        .filter(item => isAdmin || item.status === 'work_in_progress')
-                        .map((item, index) => (
-                            <FolderCard
-                                key={index}
-                                item={item}
-                                onClick={() => handleOpenForm(item)}
-                                onDeleteClick={handleDeleteClick}
-                                onConfirmClick={handleConfirm}
-                                isAdmin={isAdmin}
-                            />
-                        ))}
+                <div className="flex gap-4 h-[calc(100vh-220px)] min-h-[400px]">
+                    {/* Left Panel - List View */}
+                    <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                        {/* List Header */}
+                        <div className="bg-slate-100 px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wide border-b border-slate-200 flex items-center gap-2">
+                            <span className="w-[60px] shrink-0 text-center">Dept</span>
+                            <span className="w-[50px] shrink-0 text-center">Group</span>
+                            <span className="w-[100px] shrink-0">Model</span>
+                            <span className="w-[70px] shrink-0">Machine</span>
+                            <span className="flex-1">Title</span>
+                            <span className="w-px shrink-0"></span>
+                            <span className="w-[140px] shrink-0 text-center">Form</span>
+                            <span className="w-[150px] shrink-0 text-center">Status</span>
+                            <span className="w-[12px] shrink-0"></span>
+                        </div>
+
+                        {/* List Items */}
+                        <div className="flex-1 overflow-y-auto">
+                            {searchData
+                                .filter(item => isAdmin || item.status === 'work_in_progress')
+                                .map((item, index) => (
+                                    <ListItem
+                                        key={index}
+                                        item={item}
+                                        isSelected={selectedItem?.id === item.id}
+                                        onClick={() => setSelectedItem(item)}
+                                        availableForms={availableForms}
+                                    />
+                                ))}
+                        </div>
+                        {/* List Footer */}
+                        <div className="bg-slate-50 px-4 py-2 text-xs text-slate-500 border-t border-slate-200">
+                            {searchData.filter(item => isAdmin || item.status === 'work_in_progress').length} items
+                        </div>
+
+                    </div>
+
+                    {/* Right Panel - Preview */}
+                    <div className="w-80 shrink-0">
+                        <PreviewPanel
+                            item={selectedItem}
+                            onOpen={handleOpenForm}
+                            onConfirm={handleConfirm}
+                            onDelete={handleDeleteClick}
+                            isAdmin={isAdmin}
+                        />
+                    </div>
                 </div>
             ) : (
                 <div className="flex flex-col items-center justify-center py-20 text-slate-400 bg-white/50 rounded-2xl border-2 border-dashed border-slate-200">
