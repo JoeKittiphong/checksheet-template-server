@@ -15,34 +15,53 @@ if (!fs.existsSync(uploadDir)) {
 const createDoubleCheckStorage = () => {
     return multer.diskStorage({
         destination: (req, file, cb) => {
-            // Get year/month
+            // Standardize Year/Month
             const date = new Date();
-            const year = date.getFullYear();
+            const year = date.getFullYear().toString();
             const month = String(date.getMonth() + 1).padStart(2, '0');
 
-            // Get machine_no from request body or query
+            // Get model and machine_no from request body or query
+            const model = (req.body.model || req.query.model || 'UNKNOWN')
+                .replace(/[^a-zA-Z0-9_\-\.]/g, '_');
             const machineNo = (req.body.machine_no || req.query.machine_no || 'UNKNOWN')
-                .replace(/[^a-zA-Z0-9_\-\.]/g, '_'); // Sanitize
+                .replace(/[^a-zA-Z0-9_\-\.]/g, '_');
 
-            // Create folder path: year/month/machine_no
-            const subFolder = path.join(uploadDir, year.toString(), month, machineNo);
+            // Create folder path: year/month/model/machine_no/image
+            const subFolder = path.join(uploadDir, year, month, model, machineNo, 'image');
 
             if (!fs.existsSync(subFolder)) {
                 fs.mkdirSync(subFolder, { recursive: true });
             }
 
-            // Attach relative path for URL construction
-            req.fileRelativePath = `${year}/${month}/${machineNo}`;
+            // Attach relative path for URL construction (standardized forward slash)
+            req.fileRelativePath = `${year}/${month}/${model}/${machineNo}/image`;
 
             cb(null, subFolder);
         },
         filename: (req, file, cb) => {
-            // Create unique filename
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            const ext = path.extname(file.originalname);
+            // Helper to sanitize filename parts
+            const clean = (str) => {
+                if (!str) return 'UNKNOWN';
+                return String(str)
+                    .replace(/[^a-zA-Z0-9ก-ฮะ-ูเ-์_\-\s]/g, '') // Allow Thai characters and basics
+                    .trim()
+                    .replace(/\s+/g, '_'); // Replace spaces with underscores
+            };
 
-            // Filename: dc-{timestamp}.{ext}
-            cb(null, `dc-${uniqueSuffix}${ext}`);
+            // Get metadata from body (sent by CompactImageUpload or uploadPendingFiles)
+            const model = clean(req.body.model);
+            const machine = clean(req.body.machine_no);
+            const part = clean(req.body.part_name || req.body.row_id || 'PART');
+            const step = req.body.step || 'X';
+
+            // Unique suffix to avoid collisions for the same part
+            const uniqueSuffix = Date.now().toString().slice(-4);
+            const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+
+            // Filename: {model}-{machine}-{part}-Check{step}-{suffix}.{ext}
+            const finalFilename = `${model}-${machine}-${part}-Check${step}-${uniqueSuffix}${ext}`;
+
+            cb(null, finalFilename);
         }
     });
 };
