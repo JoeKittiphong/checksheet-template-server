@@ -13,7 +13,7 @@ function PreviewPanel({ item, onOpen, onConfirm, onDelete, isAdmin }) {
     }
 
     return (
-        <div className="h-full flex flex-col bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+        <div className="h-120 flex flex-col bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
             {/* Header */}
             <div className="bg-slate-700 text-white px-4 py-3 flex items-center justify-between">
                 <h3 className="font-bold text-sm uppercase tracking-wide">Preview</h3>

@@ -1,3 +1,0 @@
-@echo
-npm start
-pause
