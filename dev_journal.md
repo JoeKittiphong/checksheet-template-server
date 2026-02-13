@@ -86,4 +86,22 @@ checksheet_admin/src/components/
 _2026-02-02_
 
 - แปล Label ใน `ImageUploadBox.jsx`: "(Click to upload)" → "(คลิกเพื่อแนบ)"
-- แปล Label ใน `ASSY_PROBLEM/Page1.jsx`: "Attach Problem Image" → "แนบภาพปัญหาที่พบ"
+
+### 11. การปรับปรุงระบบ Admin Panel และ Available Models
+_2026-02-02_
+
+- **Image Delete Endpoint**: เพิ่ม API สำหรับลบรูปภาพที่ไม่ต้องการออกจาก Server เพื่อประหยัดพื้นที่จัดเก็บ
+- **Available Models Support**: ปรับปรุง Logic การดึงข้อมูล Models ให้รองรับ Array ของ Models (`available_models`) เพื่อการแสดงผลและการกรองข้อมูลที่ยืดหยุ่นขึ้นในหน้ารายการ
+- **Bug Fixes**: แก้ไขข้อผิดพลาดเล็กน้อยใน Admin Panel เพื่อให้การทำงานลื่นไหล
+
+### 12. การปรับปรุง Utility Functions
+_2026-02-03_
+
+- **Enhanced Utilities**: ปรับปรุงฟังก์ชัน Utility ต่างๆ ในฝั่ง Server ให้มีประสิทธิภาพและรองรับกรณี Edge Case ได้ดีขึ้น
+- **Code Cleanup**: ลบ Code ที่ไม่ได้ใช้งานและจัดระเบียบโครงสร้างไฟล์
+
+### 13. การปรับปรุง PreviewPanel UI
+_2026-02-05_
+
+- **UI Refinement**: ปรับปรุงหน้าตาของ `PreviewPanel.jsx` ให้แสดงรายละเอียดของ Checksheet ได้ชัดเจนและสวยงามยิ่งขึ้น
+- **Cleanup**: ทำความสะอาด Code ส่วนเกินที่ไม่จำเป็นออกจาก Component เพื่อให้ Maintenance ง่ายขึ้น

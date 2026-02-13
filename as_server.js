@@ -40,8 +40,9 @@ app.use('/', dbRoutes);
 // Upload Routes
 const uploadRoutes = require('./routes/upload');
 app.use('/api/upload', authenticateToken, uploadRoutes);
-app.use('/uploads/assy_problem_images', authenticateToken, express.static(path.join(__dirname, 'assy_problem_images'))); // Serve new location
-app.use('/uploads/double_check', authenticateToken, express.static(path.join(__dirname, 'double_check'))); // Serve double_check images
+app.use('/uploads/assy_problem', express.static(path.join(__dirname, 'upload_images/assy_problem'))); // Assy problem images (Legacy)
+app.use('/uploads/assy_problem_images', express.static(path.join(__dirname, 'upload_images/assy_problem'))); // Assy problem images (New Path)
+app.use('/uploads/double_check', authenticateToken, express.static(path.join(__dirname, 'upload_images/double_check'))); // Double check images
 app.use('/uploads', authenticateToken, express.static(path.join(__dirname, 'uploads'))); // Serve legacy location
 
 // ============================================

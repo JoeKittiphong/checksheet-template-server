@@ -66,7 +66,7 @@ router.delete('/delete', async (req, res) => {
         }
 
         // Validate folder name to prevent directory traversal
-        const allowedFolders = ['double_check', 'assy_problem_images'];
+        const allowedFolders = ['double_check', 'assy_problem'];
         if (!allowedFolders.includes(folder)) {
             return res.status(400).json({ success: false, message: 'Invalid folder' });
         }
@@ -75,7 +75,7 @@ router.delete('/delete', async (req, res) => {
         const sanitizedFilename = filename.replace(/\.\./g, '');
 
         // Construct full path
-        const filePath = path.join(__dirname, '..', folder, sanitizedFilename);
+        const filePath = path.join(__dirname, '..', 'upload_images', folder, sanitizedFilename);
 
         // Check if file exists
         if (!fs.existsSync(filePath)) {

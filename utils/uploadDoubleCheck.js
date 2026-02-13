@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Base upload directory for double check images
-const uploadDir = path.join(__dirname, '../double_check');
+const uploadDir = path.join(__dirname, '../upload_images/double_check');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
