@@ -1,0 +1,40 @@
+database = checksheet_db
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,      -- รหัสพนักงาน (เช่น S001)
+    username VARCHAR(100) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,   -- รหัสผ่านที่เข้ารหัสแล้ว
+    role VARCHAR(50) NOT NULL,             -- admin, manager, supervisor, engineer, operator
+    department VARCHAR(100),               -- แผนก (EDM, WIRE, ฯลฯ)
+    create_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE as_checksheet_db (
+    id SERIAL PRIMARY KEY,
+    department VARCHAR(100) NOT NULL,
+    model VARCHAR(100) NOT NULL,
+    machine_no VARCHAR(100) NOT NULL,
+    as_group VARCHAR(100) NOT NULL,
+    checksheet_name VARCHAR(255) NOT NULL, -- ชื่อไฟล์ฟอร์ม (เช่น FAMB0007_V3)
+    checksheet_data JSONB,                 -- ข้อมูลทุกอย่างในฟอร์ม (เก็บเป็น JSON)
+    status VARCHAR(50) DEFAULT 'prepare',  -- prepare, finished, approved
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE activity_logs (
+    id SERIAL PRIMARY KEY,
+    user_code VARCHAR(50),
+    username VARCHAR(100),
+    action_type VARCHAR(100),              -- LOGIN_SUCCESS, CREATE_CHECKSHEET, ฯลฯ
+    target_id VARCHAR(50),                 -- ID ของ User หรือ Checksheet ที่เกี่ยวข้อง
+    details JSONB,                         -- รายละเอียดเพิ่มเติมของการกระทำนั้นๆ
+    ip_address VARCHAR(50),
+    user_agent TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Insert initial Admin user (Password: admin123)
+INSERT INTO users (code, username, password_hash, role, department) 
+VALUES ('ADMIN', 'Admin Account', '$2b$10$45RLaPNqAVdiiZU29.6OYuS2tcy1YDeM4S0uuaiqZYzghA1M4ka3y', 'admin', 'ENGINEERING');
