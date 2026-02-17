@@ -17,7 +17,8 @@ app.use(cors({
     origin: true,
     credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 app.use(cookieParser());
 
 // ============================================
@@ -103,6 +104,14 @@ app.get(/.*/, (req, res) => {
     } else {
         res.status(404).send('Web App build not found. Please run "npm run build" in checksheet-template.');
     }
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('FATAL ERROR: Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('FATAL ERROR: Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
 const PORT = process.env.SERVER_PORT || 3000;
