@@ -19,9 +19,43 @@ const UserManagement = ({ onBack }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterMode, setFilterMode] = useState('all'); // 'all' or 'online'
 
+    // Token expiry settings
+    const [tokenExpiryHours, setTokenExpiryHours] = useState(3);
+    const [savingSettings, setSavingSettings] = useState(false);
+    const [settingsMsg, setSettingsMsg] = useState('');
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+
     useEffect(() => {
         fetchUsers();
+        if (currentUser?.role === 'admin') fetchSettings();
     }, []);
+
+    const fetchSettings = async () => {
+        try {
+            const res = await axios.get('/api/admin/settings', { withCredentials: true });
+            if (res.data.success) {
+                setTokenExpiryHours(res.data.settings.token_expiry_hours || 3);
+            }
+        } catch (err) {
+            console.error('Error fetching settings:', err);
+        }
+    };
+
+    const handleSaveSettings = async () => {
+        setSavingSettings(true);
+        setSettingsMsg('');
+        try {
+            const res = await axios.put('/api/admin/settings', { token_expiry_hours: tokenExpiryHours }, { withCredentials: true });
+            if (res.data.success) {
+                setSettingsMsg('✅ Saved! New duration applies to next login.');
+                setTimeout(() => setSettingsMsg(''), 4000);
+            }
+        } catch (err) {
+            setSettingsMsg('❌ ' + (err.response?.data?.error || 'Save failed'));
+        } finally {
+            setSavingSettings(false);
+        }
+    };
 
     const fetchUsers = async () => {
         try {
@@ -161,6 +195,18 @@ const UserManagement = ({ onBack }) => {
                             </svg>
                             Add User
                         </button>
+
+                        {currentUser?.role === 'admin' && (
+                            <button
+                                onClick={() => { setSettingsMsg(''); setShowSettingsModal(true); }}
+                                className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors"
+                                title="Session Settings"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -242,7 +288,52 @@ const UserManagement = ({ onBack }) => {
                 </div>
             </div>
 
-            {/* Modal */}
+            {/* Settings Modal */}
+            {showSettingsModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+                        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
+                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            </svg>
+                            Session Settings
+                        </h2>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Session Duration</label>
+                            <p className="text-xs text-gray-400 mb-3">Token จะหมดอายุหลังจาก login ตามเวลาที่กำหนด</p>
+                            <div className="flex items-center gap-2 mb-4">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="720"
+                                    className="w-24 border border-gray-200 p-2.5 rounded-lg text-center font-bold text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                    value={tokenExpiryHours}
+                                    onChange={(e) => setTokenExpiryHours(Number(e.target.value))}
+                                />
+                                <span className="text-sm text-gray-500 font-medium">hours (1–720)</span>
+                            </div>
+                            {settingsMsg && <p className="text-sm font-medium mb-3">{settingsMsg}</p>}
+                        </div>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => setShowSettingsModal(false)}
+                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                            >
+                                Close
+                            </button>
+                            <button
+                                onClick={handleSaveSettings}
+                                disabled={savingSettings}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                            >
+                                {savingSettings ? 'Saving...' : '💾 Save'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* User Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">

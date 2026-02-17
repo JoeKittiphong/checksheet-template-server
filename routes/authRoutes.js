@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 const { authenticateToken, JWT_SECRET } = require('../middleware/auth');
 const { logActivity } = require('../utils/logger');
+const { getTokenExpiry, getTokenExpiryMs } = require('../utils/settings');
 
 // Login
 router.post('/login', async (req, res) => {
@@ -26,14 +27,15 @@ router.post('/login', async (req, res) => {
         const token = jwt.sign(
             { id: user.id, code: user.code, username: user.username, role: user.role, department: user.department },
             JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: getTokenExpiry() }
         );
 
+        const isLocalhost = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
         res.cookie('token', token, {
             httpOnly: true,
-            secure: true, // Now using HTTPS via Nginx
-            sameSite: 'lax', // Compatible with most modern browsers
-            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+            secure: !isLocalhost,
+            sameSite: 'lax',
+            maxAge: getTokenExpiryMs()
         });
 
         await logActivity({

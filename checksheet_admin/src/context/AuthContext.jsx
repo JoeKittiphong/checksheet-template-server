@@ -27,6 +27,28 @@ export const AuthProvider = ({ children }) => {
         checkAuthStatus();
     }, []);
 
+    // Axios interceptor: auto-logout on expired token
+    useEffect(() => {
+        const interceptor = axios.interceptors.response.use(
+            (response) => response,
+            (error) => {
+                if (error.response?.status === 401) {
+                    const code = error.response?.data?.code;
+                    if (code === 'TOKEN_EXPIRED' || code === 'NO_TOKEN') {
+                        setUser(null);
+                        // Only show alert for expired (not for initial auth check)
+                        if (code === 'TOKEN_EXPIRED') {
+                            alert('⏰ Session หมดอายุแล้ว กรุณา Login ใหม่');
+                        }
+                    }
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        return () => axios.interceptors.response.eject(interceptor);
+    }, []);
+
     const login = async (code, password) => {
         try {
             const apiBase = import.meta.env.VITE_API_BASE_URL || '';
@@ -53,6 +75,7 @@ export const AuthProvider = ({ children }) => {
             setUser(null);
         } catch (error) {
             console.error('Logout error:', error);
+            setUser(null); // Force logout even if API fails
         }
     };
 

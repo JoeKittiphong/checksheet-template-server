@@ -5,6 +5,7 @@ const path = require('path');
 const multer = require('multer');
 const AdmZip = require('adm-zip');
 const { requireAdmin } = require('../middleware/auth');
+const { getSettings, saveSettings } = require('../utils/settings');
 
 // Setup Multer for ZIP uploads
 const storage = multer.diskStorage({
@@ -264,6 +265,42 @@ router.put('/templates/:folderName/meta', requireAdmin, (req, res) => {
     } catch (error) {
         console.error('Write Meta Error:', error);
         res.status(500).json({ success: false, error: `Failed to write meta.json: ${error.message}` });
+    }
+});
+
+// GET /api/admin/settings
+// Read server settings (admin only)
+router.get('/settings', requireAdmin, (req, res) => {
+    try {
+        const settings = getSettings();
+        res.json({ success: true, settings });
+    } catch (error) {
+        console.error('Read Settings Error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// PUT /api/admin/settings
+// Update server settings (admin only)
+router.put('/settings', requireAdmin, (req, res) => {
+    try {
+        const { token_expiry_hours } = req.body;
+
+        const updates = {};
+        if (token_expiry_hours !== undefined) {
+            const hours = Number(token_expiry_hours);
+            if (isNaN(hours) || hours < 1 || hours > 720) {
+                return res.status(400).json({ success: false, error: 'token_expiry_hours must be between 1 and 720' });
+            }
+            updates.token_expiry_hours = hours;
+        }
+
+        const saved = saveSettings(updates);
+        console.log(`[Settings] Updated:`, saved);
+        res.json({ success: true, settings: saved, message: 'Settings updated. New token duration applies to next login.' });
+    } catch (error) {
+        console.error('Save Settings Error:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
