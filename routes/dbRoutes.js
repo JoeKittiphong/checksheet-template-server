@@ -27,13 +27,29 @@ router.post('/api/save-form', authenticateToken, async (req, res) => {
                 return res.status(404).json({ success: false, error: 'Form not found for update' });
             }
         } else {
-            // Insert new record
-            action_type = 'CREATE_CHECKSHEET';
-            result = await pool.query(
-                `INSERT INTO as_checksheet_db (department, model, machine_no, as_group, checksheet_name, checksheet_data, status, created_at, updated_at) 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *`,
-                [department, model, machine_no, as_group, checksheet_name, checksheet_data, safeStatus]
+            // Check for existing form with same checksheet_name + machine_no
+            const existing = await pool.query(
+                'SELECT id FROM as_checksheet_db WHERE checksheet_name = $1 AND machine_no = $2',
+                [checksheet_name, machine_no]
             );
+            if (existing.rows.length > 0) {
+                // Upsert: Update the existing record instead of creating a duplicate
+                const existingId = existing.rows[0].id;
+                result = await pool.query(
+                    `UPDATE as_checksheet_db 
+                     SET department = $1, model = $2, as_group = $3, checksheet_data = $4, status = $5, updated_at = CURRENT_TIMESTAMP
+                     WHERE id = $6 RETURNING *`,
+                    [department, model, as_group, checksheet_data, safeStatus, existingId]
+                );
+            } else {
+                // Insert new record
+                action_type = 'CREATE_CHECKSHEET';
+                result = await pool.query(
+                    `INSERT INTO as_checksheet_db (department, model, machine_no, as_group, checksheet_name, checksheet_data, status, created_at, updated_at) 
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *`,
+                    [department, model, machine_no, as_group, checksheet_name, checksheet_data, safeStatus]
+                );
+            }
         }
 
         const savedItem = result.rows[0];
@@ -66,6 +82,18 @@ router.post('/api/save-form', authenticateToken, async (req, res) => {
 router.post('/new', authenticateToken, async (req, res) => {
     const { department, model, machine_no, as_group, checksheet_name } = req.body;
     try {
+        // Check for existing form with same checksheet_name + machine_no
+        const existing = await pool.query(
+            'SELECT id FROM as_checksheet_db WHERE checksheet_name = $1 AND machine_no = $2',
+            [checksheet_name, machine_no]
+        );
+        if (existing.rows.length > 0) {
+            return res.status(409).json({
+                success: false,
+                error: 'A form with this checksheet name and machine number already exists',
+                existing_id: existing.rows[0].id
+            });
+        }
         const result = await pool.query(
             `INSERT INTO as_checksheet_db (department, model, machine_no, as_group, checksheet_name, status, created_at, updated_at) 
              VALUES ($1, $2, $3, $4, $5, 'prepare', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING *`,

@@ -81,6 +81,11 @@ CREATE INDEX IF NOT EXISTS idx_logs_user ON activity_logs(user_code);
 CREATE INDEX IF NOT EXISTS idx_checksheet_machine ON as_checksheet_db(machine_no);
 CREATE INDEX IF NOT EXISTS idx_checksheet_status ON as_checksheet_db(status);
 
+-- Unique constraint: One form per machine
+-- Run this manually if existing duplicates need cleanup first:
+-- DELETE FROM as_checksheet_db a USING as_checksheet_db b WHERE a.id < b.id AND a.checksheet_name = b.checksheet_name AND a.machine_no = b.machine_no;
+ALTER TABLE as_checksheet_db ADD CONSTRAINT unique_checksheet_machine UNIQUE (checksheet_name, machine_no);
+
 -- ==========================================
 -- INITIAL DATA
 -- ==========================================
