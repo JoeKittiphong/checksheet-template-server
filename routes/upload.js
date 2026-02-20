@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
+console.log('[DEBUG] Loading upload.js route file');
 const upload = require('../utils/uploadConfig');
 const uploadDoubleCheck = require('../utils/uploadDoubleCheck');
+const uploadAssets = require('../utils/uploadAssets');
 const pool = require('../config/db');
 const path = require('path');
 const fs = require('fs');
@@ -94,6 +96,84 @@ router.delete('/delete', async (req, res) => {
     } catch (err) {
         console.error('Delete Error:', err);
         res.status(500).json({ success: false, message: 'Server error during delete' });
+    }
+});
+
+// --- ASSET MANAGEMENT ROUTES ---
+
+// GET /api/upload/assets
+// Returns list of all files in upload_images/assets/[workspace]
+router.get('/assets', async (req, res) => {
+    try {
+        const { workspace } = req.query;
+        const subFolder = workspace || 'general';
+        const assetDir = path.join(__dirname, '..', 'upload_images', 'assets', subFolder);
+
+        if (!fs.existsSync(assetDir)) {
+            return res.json({ success: true, assets: [] });
+        }
+
+        const files = fs.readdirSync(assetDir);
+        const assets = files.map(file => ({
+            name: file,
+            url: `/uploads/assets/${subFolder}/${file}`,
+            type: 'image'
+        })).filter(a => /\.(jpg|jpeg|png|gif|svg|webp)$/i.test(a.name));
+
+        res.json({ success: true, assets });
+    } catch (err) {
+        console.error('Fetch Assets Error:', err);
+        res.status(500).json({ success: false, message: 'Server error fetching assets' });
+    }
+});
+
+// POST /api/upload/assets
+// Uploads a new asset to the library
+router.post('/assets', uploadAssets.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No file uploaded' });
+        }
+
+        const workspace = req.headers['x-workspace-name'] || 'general';
+
+        res.json({
+            success: true,
+            message: 'Asset uploaded successfully',
+            filename: req.file.filename,
+            url: `/uploads/assets/${workspace}/${req.file.filename}`
+        });
+    } catch (err) {
+        console.error('Asset Upload Error:', err);
+        res.status(500).json({ success: false, message: 'Server error during asset upload' });
+    }
+});
+
+// DELETE /api/upload/assets
+// Deletes an asset from the library
+// Body: { filename: "image.png", workspace: "workspace_name" }
+router.delete('/assets', async (req, res) => {
+    try {
+        const { filename, workspace } = req.body;
+
+        if (!filename) {
+            return res.status(400).json({ success: false, message: 'Filename required' });
+        }
+
+        const subFolder = workspace || 'general';
+        // Validate filename to prevent traversal
+        const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.\-_]/g, '');
+        const assetPath = path.join(__dirname, '..', 'upload_images', 'assets', subFolder, sanitizedFilename);
+
+        if (!fs.existsSync(assetPath)) {
+            return res.status(404).json({ success: false, message: 'Asset not found' });
+        }
+
+        fs.unlinkSync(assetPath);
+        res.json({ success: true, message: 'Asset deleted successfully' });
+    } catch (err) {
+        console.error('Delete Asset Error:', err);
+        res.status(500).json({ success: false, message: 'Server error deleting asset' });
     }
 });
 

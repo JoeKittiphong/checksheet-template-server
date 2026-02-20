@@ -8,7 +8,6 @@ const { authenticateToken, JWT_SECRET } = require('./middleware/auth');
 const jwt = require('jsonwebtoken');
 
 const app = express();
-app.set('trust proxy', 1);
 
 // ============================================
 // MIDDLEWARE
@@ -28,22 +27,23 @@ const authRoutes = require('./routes/authRoutes');
 const formRoutes = require('./routes/formRoutes');
 const dbRoutes = require('./routes/dbRoutes');
 const userRoutes = require('./routes/userRoutes');
-const logRoutes = require('./routes/logRoutes');
+const uploadRoutes = require('./routes/upload');
+const formsRoutes = require('./routes/forms');
 const adminRoutes = require('./routes/adminRoutes');
+const logRoutes = require('./routes/logRoutes');
 
 app.use('/auth', authRoutes);
-app.use('/users', userRoutes);
+app.use('/api/users', userRoutes);
 app.use('/logs', logRoutes);
+app.use('/api/upload', uploadRoutes); // Non-authenticated for builder preview convenience if needed
+app.use('/api/forms', formsRoutes);
 app.use('/api/admin', authenticateToken, adminRoutes);
 app.use('/', formRoutes);
 app.use('/', dbRoutes);
-
-// Upload Routes
-const uploadRoutes = require('./routes/upload');
-app.use('/api/upload', authenticateToken, uploadRoutes);
 app.use('/uploads/assy_problem', express.static(path.join(__dirname, 'upload_images/assy_problem'))); // Assy problem images (Legacy)
 app.use('/uploads/assy_problem_images', express.static(path.join(__dirname, 'upload_images/assy_problem'))); // Assy problem images (New Path)
 app.use('/uploads/double_check', authenticateToken, express.static(path.join(__dirname, 'upload_images/double_check'))); // Double check images
+app.use('/uploads/assets', express.static(path.join(__dirname, 'upload_images/assets'))); // Asset Library images (Publicly accessible)
 app.use('/uploads', authenticateToken, express.static(path.join(__dirname, 'uploads'))); // Serve legacy location
 
 // ============================================
@@ -51,7 +51,32 @@ app.use('/uploads', authenticateToken, express.static(path.join(__dirname, 'uplo
 // ============================================
 const formsDir = path.join(__dirname, 'checksheet_form');
 
+// Allow public access to manifest.webmanifest for PWA
+app.get('/form/:formName/manifest.webmanifest', (req, res) => {
+    // Serve from the unified FORMVIEWER build or specific legacy folders
+    // Prioritize FORMVIEWER as it's the main PWA engine
+    const manifestPath = path.join(formsDir, 'FORMVIEWER', 'manifest.webmanifest');
+    if (fs.existsSync(manifestPath)) {
+        res.sendFile(manifestPath);
+    } else {
+        res.status(404).send('Manifest not found');
+    }
+});
+
+// 0. Serve Static Forms (Assets & JSON) - PRIORITY
+app.use('/form', authenticateToken, express.static(formsDir));
+
 // SPA Fallback for Dynamic Forms (/form/edw, etc.)
+
+// Explicitly handle JSON form requests to prevent falling through to SPA
+app.get('/form/:name.json', authenticateToken, (req, res) => {
+    const filePath = path.join(formsDir, `${req.params.name}.json`);
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(404).json({ error: 'Form file not found' });
+    }
+});
 
 // SPA Fallback for Dynamic Forms (/form/edw, etc.)
 app.get(/^\/form\/([^/]+)(?:\/.*)?$/, (req, res, next) => {
@@ -71,21 +96,38 @@ app.get(/^\/form\/([^/]+)(?:\/.*)?$/, (req, res, next) => {
         const formName = req.params[0];
         if (req.path.match(/\.\w+$/)) return next();
 
+        // 1. Try to serve specific form (Legacy HTML)
         const formPath = path.join(formsDir, formName, 'index.html');
         if (fs.existsSync(formPath)) {
-            res.sendFile(formPath);
-        } else {
-            res.status(404).send('Form not found');
+            return res.sendFile(formPath);
         }
+
+        // 2. Fallback to Generic Form Viewer (Dynamic JSON)
+        // If the specific folder exists (it should for assets), but no index.html,
+        // we serve the Viewer engine.
+        // Even if folder doesn't exist, we might want to let Viewer handle 404s gracefully,
+        // but typically the folder is created when saving.
+        const viewerPath = path.join(formsDir, 'FORMVIEWER', 'index.html');
+        if (fs.existsSync(viewerPath)) {
+            return res.sendFile(viewerPath);
+        }
+
+        res.status(404).send('Form not found');
     });
 });
 
-// Admin Panel (Public)
+// 1. Form Builder (Secured for Admin)
+// Mount at both /builder and /form/FORMBUILDER to satisfy the built app's asset paths
+// NOW SERVED FROM checksheet_form/FORMBUILDER (Unified Location)
+app.use('/builder', authenticateToken, express.static(path.join(formsDir, 'FORMBUILDER')));
+app.use('/form/FORMBUILDER', authenticateToken, express.static(path.join(formsDir, 'FORMBUILDER')));
+
+// 2. Admin Panel (Public Static)
 const appBuildDir = path.join(__dirname, 'checksheet_admin/dist');
 app.use(express.static(appBuildDir));
 
-// Serve checksheet forms (Secured Assets)
-app.use('/form', authenticateToken, express.static(formsDir));
+// 3. Serve checksheet forms (Secured Assets)
+
 
 // Shorthand for images/assets (legacy support - secured)
 app.use('/images', authenticateToken, express.static(path.join(formsDir, 'dist/images')));

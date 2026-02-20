@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+// UPDATED BY AGENT FOR JSON SUPPORT
 const multer = require('multer');
 const AdmZip = require('adm-zip');
 const { requireAdmin } = require('../middleware/auth');
@@ -94,6 +95,7 @@ router.get('/templates', (req, res) => {
         const folders = getDirectories(formsDir);
         const templates = [];
 
+        // 1. Process Legacy Folders
         folders.forEach(folder => {
             const metaPath = path.join(formsDir, folder, 'meta.json');
             let metaData = null;
@@ -110,10 +112,39 @@ router.get('/templates', (req, res) => {
 
             templates.push({
                 folderName: folder,
+                type: 'legacy',
                 meta: metaData,
                 hasMeta: !!metaData,
                 url: `/form/${folder}`
             });
+        });
+
+        // 2. Process New JSON Forms
+        const files = fs.readdirSync(formsDir);
+        files.forEach(file => {
+            if (file.endsWith('.json') && file !== 'meta.json') {
+                const name = path.basename(file, '.json');
+                const filePath = path.join(formsDir, file);
+                try {
+                    const content = fs.readFileSync(filePath, 'utf-8');
+                    const formData = JSON.parse(content);
+
+                    templates.push({
+                        folderName: name,
+                        type: 'json',
+                        meta: formData.formSettings?.meta || {
+                            form_name: name,
+                            checksheet_name: name,
+                            department: 'JSON',
+                            version: '1.0'
+                        },
+                        hasMeta: true,
+                        url: `/preview/${name}` // Point to the new FormViewer route
+                    });
+                } catch (err) {
+                    console.error(`Error reading JSON form ${file}:`, err.message);
+                }
+            }
         });
 
         // Sort alphabetically by folderName

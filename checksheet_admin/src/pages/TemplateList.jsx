@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+// UPDATED BY AGENT FOR JSON SUPPORT
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import TemplateUploadModal from '../components/TemplateUploadModal';
@@ -120,12 +121,20 @@ const TemplateList = ({ onBack }) => {
                 </div>
 
                 {isAdmin && (
-                    <button
-                        onClick={() => setIsUploadModalOpen(true)}
-                        className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg shadow-blue-500/30 transition-all transform active:scale-95"
-                    >
-                        <span className="text-xl">📤</span> Upload New Template
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => window.open('/builder/', '_blank')}
+                            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold shadow-lg shadow-green-500/30 transition-all transform active:scale-95"
+                        >
+                            <span className="text-xl">🛠️</span> Form Builder
+                        </button>
+                        <button
+                            onClick={() => setIsUploadModalOpen(true)}
+                            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg shadow-blue-500/30 transition-all transform active:scale-95"
+                        >
+                            <span className="text-xl">📤</span> Upload New Template
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -184,6 +193,7 @@ const TemplateList = ({ onBack }) => {
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Form Name</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Title</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Department</th>
@@ -195,7 +205,13 @@ const TemplateList = ({ onBack }) => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {filteredTemplates.map((tpl) => (
-                            <tr key={tpl.folderName} className="hover:bg-gray-50 transition-colors">
+                            <tr key={`${tpl.type}-${tpl.folderName}`} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${tpl.type === 'json' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
+                                        }`}>
+                                        {tpl.type === 'json' ? 'JSON' : 'HTML'}
+                                    </span>
+                                </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
                                     {tpl.meta?.form_name || tpl.folderName}
                                 </td>
@@ -217,14 +233,26 @@ const TemplateList = ({ onBack }) => {
                                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                                     <div className="flex items-center gap-3">
                                         <a
-                                            href={tpl.url}
+                                            href={tpl.type === 'json' ? `http://localhost:5173${tpl.url}` : tpl.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="text-indigo-600 hover:text-indigo-900 font-medium"
                                         >
-                                            Open ↗
+                                            {tpl.type === 'json' ? 'Preview ↗' : 'Open ↗'}
                                         </a>
-                                        {isAdmin && (
+
+                                        {tpl.type === 'json' && isAdmin && (
+                                            <a
+                                                href={`http://localhost:5173/builder?workspace=${tpl.folderName}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-blue-600 hover:text-blue-900 font-medium"
+                                            >
+                                                ⚙️ Edit
+                                            </a>
+                                        )}
+
+                                        {isAdmin && tpl.type === 'legacy' && (
                                             <button
                                                 onClick={() => setEditMetaFolder(tpl.folderName)}
                                                 className="text-amber-600 hover:text-amber-800 font-medium transition-colors"

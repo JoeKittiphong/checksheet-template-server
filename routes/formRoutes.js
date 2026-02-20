@@ -12,10 +12,13 @@ const pool = require('../config/db');
 // Endpoint to list available forms
 router.get('/available-forms', authenticateToken, async (req, res) => {
     try {
-        // 1. Get List of Templates (Folders)
+        // 1. Get List of Templates (Folders & JSON Files)
         const files = await fs.promises.readdir(formsDir, { withFileTypes: true });
-        const templates = files
-            .filter(dirent => dirent.isDirectory() && dirent.name.trim() === dirent.name) // Ignore "ghost" folders with spaces
+
+        // 1.1 Process Directories (Legacy & Assets)
+        const dirTemplates = files
+            .filter(dirent => dirent.isDirectory() && dirent.name.trim() === dirent.name)
+            .filter(dirent => !['FORMBUILDER', 'FORMVIEWER', 'dist', 'node_modules'].includes(dirent.name)) // Exclude system folders
             .map(dirent => {
                 const metaPath = path.join(formsDir, dirent.name, 'meta.json');
                 let meta = {};
@@ -29,9 +32,44 @@ router.get('/available-forms', authenticateToken, async (req, res) => {
                 }
                 return {
                     id: dirent.name, // Template ID (Folder Name)
+                    source: 'folder',
                     ...meta
                 };
             });
+
+        // 1.2 Process JSON Files (New Builder Forms)
+        const jsonTemplates = [];
+        files.forEach(dirent => {
+            if (dirent.isFile() && dirent.name.endsWith('.json') && dirent.name !== 'meta.json' && dirent.name !== 'package.json') {
+                const formId = path.basename(dirent.name, '.json');
+
+                // Avoid duplicates if folder already exists (Folder takes precedence for assets, but JSON is the source)
+                if (dirTemplates.some(t => t.id === formId)) return;
+
+                const filePath = path.join(formsDir, dirent.name);
+                let meta = {};
+                try {
+                    const content = fs.readFileSync(filePath, 'utf8');
+                    const formData = JSON.parse(content);
+                    // Extract meta from formSettings if available, or use defaults
+                    meta = formData.formSettings?.meta || {
+                        checksheet_name: formId,
+                        model: 'Universal',
+                        category: 'General'
+                    };
+                } catch (e) {
+                    console.error(`Error reading JSON form ${dirent.name}:`, e);
+                }
+
+                jsonTemplates.push({
+                    id: formId,
+                    source: 'json',
+                    ...meta
+                });
+            }
+        });
+
+        const templates = [...dirTemplates, ...jsonTemplates];
 
         // 2. Get Machine Assignments from DB
         const result = await pool.query('SELECT * FROM as_machine_master');
@@ -47,29 +85,32 @@ router.get('/available-forms', authenticateToken, async (req, res) => {
             if (assignments.length > 0) {
                 // If assigned to machines, create a card for each machine
                 assignments.forEach(machine => {
+                    const baseUrl = template.source === 'json' ? `/form/${template.id}` : `/${template.id}`;
                     finalForms.push({
                         name: template.checksheet_name || template.id,
-                        label: `${template.checksheet_name || template.id} (${machine.machine_no})`, // Dynamic Label
-                        path: `/${template.id}?machine_no=${machine.machine_no}&model=${machine.model}`, // Pass params in URL
+                        label: `${template.checksheet_name || template.id} (${machine.machine_no})`,
+                        path: `${baseUrl}?machine_no=${machine.machine_no}&model=${machine.model}`,
                         department: machine.department || template.department,
                         model: machine.model || template.model,
-                        available_models: template.available_models, // Add available_models from meta
+                        available_models: template.available_models,
                         as_group: template.as_group,
-                        machine_no: machine.machine_no // Explicit machine no
+                        machine_no: machine.machine_no,
+                        source: template.source
                     });
                 });
             } else {
-                // If no specific assignment, show generic card (Legacy behavior)
-                // Only if it's not strictly a machine-specific form (optional logic)
+                // If no specific assignment, show generic card
+                const baseUrl = template.source === 'json' ? `/${template.id}` : `/${template.id}`;
                 finalForms.push({
                     name: template.checksheet_name || template.id,
                     label: template.checksheet_name ? `${template.checksheet_name} - ${template.model || ''}` : template.id,
-                    path: `/${template.id}`,
+                    path: baseUrl,
                     department: template.department,
                     model: template.model,
-                    available_models: template.available_models, // Add available_models from meta
+                    available_models: template.available_models,
                     as_group: template.as_group,
-                    machine_no: 'UNKNOWN'
+                    machine_no: 'UNKNOWN',
+                    source: template.source
                 });
             }
         });
